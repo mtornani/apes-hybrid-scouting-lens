@@ -1,87 +1,80 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>APES - Hybrid Scouting Lens</title>
+  <title>APES – Hybrid Scouting Lens</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>APES</h1>
-      <p>Hybrid Scouting Lens for U17 Football Talent</p>
-    </header>
-    
-    <section id="player-form">
-      <h2>Add New Player</h2>
-      <form id="scout-form">
-        <input type="text" id="name" placeholder="Player Name" required>
-        <input type="text" id="country" placeholder="Country" required>
-        <input type="number" id="year" placeholder="Birth Year" required>
-        <input type="text" id="role" placeholder="Role" required>
-        <input type="text" id="club" placeholder="Club" required>
-        <input type="url" id="video" placeholder="Video URL (Twitter/X)">
-        <input type="text" id="context" placeholder="Context (e.g., match highlight)">
-        <input type="text" id="tags" placeholder="Tags (comma-separated)">
-        <input type="text" id="source" placeholder="Source (e.g., scout, journalist)">
+  <header>
+    <h1>APES</h1>
+    <p>Hybrid Scouting Lens</p>
+  </header>
+
+  <main>
+    <!-- Player Entry Form -->
+    <section id="entry-form">
+      <h2>Add Player</h2>
+      <form id="player-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" required>
+        <label for="country">Country:</label>
+        <input type="text" id="country" required>
+        <label for="year">Year of Birth:</label>
+        <input type="number" id="year" min="2000" max="2010" required>
+        <label for="role">Role:</label>
+        <input type="text" id="role" required>
+        <label for="club">Club:</label>
+        <input type="text" id="club" required>
+        <label for="video">Video URL (Twitter/X or YouTube):</label>
+        <input type="url" id="video" required>
+        <label for="context">Context Description:</label>
+        <textarea id="context" required></textarea>
+        <label for="tags">Gesture Tags (comma-separated):</label>
+        <input type="text" id="tags">
+        <label for="source">Source Type:</label>
+        <input type="text" id="source" required>
+        <label for="rank">APES Rank:</label>
         <select id="rank" required>
-          <option value="" disabled selected>Select Rank</option>
           <option value="Tattico">Tattico</option>
           <option value="Elettrico">Elettrico</option>
           <option value="Predatore">Predatore</option>
         </select>
-        <textarea id="insight" placeholder="Scouting Insight" rows="4"></textarea>
+        <label for="insight">Short Insight:</label>
+        <textarea id="insight" required></textarea>
         <button type="submit">Add Player</button>
       </form>
     </section>
-    
-    <section id="radar-list">
-      <h2>Radar List</h2>
-      <input type="text" id="filter" placeholder="Filter by name, country, or tags">
-      <ul id="player-list"></ul>
-      <button id="export-btn">Export to JSON</button>
+
+    <!-- Radar View -->
+    <section id="radar-view">
+      <h2>Radar View</h2>
+      <div id="filters">
+        <label for="filter-country">Filter by Country:</label>
+        <select id="filter-country">
+          <option value="">All</option>
+        </select>
+        <label for="filter-role">Filter by Role:</label>
+        <select id="filter-role">
+          <option value="">All</option>
+        </select>
+        <label for="filter-rank">Filter by Rank:</label>
+        <select id="filter-rank">
+          <option value="">All</option>
+          <option value="Tattico">Tattico</option>
+          <option value="Elettrico">Elettrico</option>
+          <option value="Predatore">Predatore</option>
+        </select>
+      </div>
+      <div id="player-list"></div>
+      <div id="demo-loader" style="margin-top: 10px;">
+        <button id="load-demo-btn" style="display: none;">🎯 Carica radar demo</button>
+      </div>
+      <button id="export-btn">Export Radar as Markdown</button>
     </section>
-  </div>
+  </main>
+
   <script src="app.js"></script>
 </body>
 </html>

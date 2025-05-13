@@ -1,4 +1,4 @@
-const initialPlayers = [
+const demoPlayers = [
   {
     name: "Gabriel Sanabria",
     country: "Ecuador",
@@ -40,48 +40,73 @@ const initialPlayers = [
   }
 ];
 
-function loadPlayers() {
-  const players = JSON.parse(localStorage.getItem('players')) || initialPlayers;
-  localStorage.setItem('players', JSON.stringify(players));
-  return players;
+function initStorage() {
+  const data = JSON.parse(localStorage.getItem('players'));
+  if (!data || data.length === 0) {
+    showDemoLoaderIfEmpty();
+  }
 }
 
-function savePlayer(player) {
-  const players = loadPlayers();
-  players.push(player);
+function getPlayers() {
+  return JSON.parse(localStorage.getItem('players')) || [];
+}
+
+function savePlayers(players) {
   localStorage.setItem('players', JSON.stringify(players));
 }
 
-function displayPlayers(filter = '') {
-  const players = loadPlayers();
+function normalizeVideoUrl(url) {
+  if (url.includes('twitter.com') || url.includes('x.com')) {
+    return url.replace('twitter.com', 'x.com').replace('status', 'embed');
+  } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    let videoId = url.split('v=')[1] || url.split('/').pop();
+    if (videoId.includes('&')) videoId = videoId.split('&')[0];
+    return `https://www.youtube.com/embed/${videoId}`;
+  }
+  return url;
+}
+
+function renderPlayers(players) {
   const playerList = document.getElementById('player-list');
   playerList.innerHTML = '';
-  
-  const filteredPlayers = players.filter(player => 
-    player.name.toLowerCase().includes(filter.toLowerCase()) ||
-    player.country.toLowerCase().includes(filter.toLowerCase()) ||
-    player.tags.some(tag => tag.toLowerCase().includes(filter.toLowerCase()))
-  );
-  
-  filteredPlayers.forEach(player => {
-    const li = document.createElement('li');
-    li.className = 'player-card';
-    li.innerHTML = `
-      <h3>${player.name} (${player.country}, ${player.year})</h3>
+  players.forEach(player => {
+    const card = document.createElement('div');
+    card.className = 'player-card';
+    card.innerHTML = `
+      <h3>${player.name} (${player.rank})</h3>
+      <p><strong>Country:</strong> ${player.country}</p>
       <p><strong>Role:</strong> ${player.role}</p>
-      <p><strong>Club:</strong> ${player.club}</p>
-      ${player.video ? `<p><strong>Video:</strong> <a href="${player.video}" target="_blank">Watch</a></p>` : ''}
-      ${player.context ? `<p><strong>Context:</strong> ${player.context}</p>` :'= ''}
-      <p><strong>Tags:</strong> ${player.tags.join(', ')}</p>
-      <p><strong>Source:</strong> ${player.source}</p>
-      <p><strong>Rank:</strong> ${player.rank}</p>
       <p><strong>Insight:</strong> ${player.insight}</p>
+      <iframe src="${normalizeVideoUrl(player.video)}" allowfullscreen></iframe>
     `;
-    playerList.appendChild(li);
+    playerList.appendChild(card);
   });
 }
 
-document.getElementById('scout-form').addEventListener('submit', (e) => {
+function populateFilters() {
+  const players = getPlayers();
+  const countries = [...new Set(players.map(p => p.country))];
+  const roles = [...new Set(players.map(p => p.role))];
+
+  document.getElementById('filter-country').innerHTML = '<option value="">All</option>' + countries.map(c => `<option value="${c}">${c}</option>`).join('');
+  document.getElementById('filter-role').innerHTML = '<option value="">All</option>' + roles.map(r => `<option value="${r}">${r}</option>`).join('');
+}
+
+function applyFilters() {
+  const country = document.getElementById('filter-country').value;
+  const role = document.getElementById('filter-role').value;
+  const rank = document.getElementById('filter-rank').value;
+
+  let players = getPlayers();
+  if (country) players = players.filter(p => p.country === country);
+  if (role) players = players.filter(p => p.role === role);
+  if (rank) players = players.filter(p => p.rank === rank);
+
+  renderPlayers(players);
+  showDemoLoaderIfEmpty();
+}
+
+document.getElementById('player-form').addEventListener('submit', e => {
   e.preventDefault();
   const player = {
     name: document.getElementById('name').value,
@@ -91,32 +116,65 @@ document.getElementById('scout-form').addEventListener('submit', (e) => {
     club: document.getElementById('club').value,
     video: document.getElementById('video').value,
     context: document.getElementById('context').value,
-    tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()),
+    tags: document.getElementById('tags').value.split(',').map(t => t.trim()).filter(t => t),
     source: document.getElementById('source').value,
     rank: document.getElementById('rank').value,
     insight: document.getElementById('insight').value
   };
-  savePlayer(player);
-  displayPlayers();
+
+  const players = getPlayers();
+  players.push(player);
+  savePlayers(players);
+  populateFilters();
+  applyFilters();
   e.target.reset();
 });
 
-document.getElementById('filter').addEventListener('input', (e) => {
-  displayPlayers(e.target.value);
-});
-
 document.getElementById('export-btn').addEventListener('click', () => {
-  const players = loadPlayers();
-  const json = JSON.stringify(players, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
+  const players = getPlayers();
+  const markdown = players.map(p => `
+# ${p.name} (${p.rank})
+- **Country:** ${p.country}
+- **Year of Birth:** ${p.year}
+- **Role:** ${p.role}
+- **Club:** ${p.club}
+- **Video:** ${p.video}
+- **Context:** ${p.context}
+- **Gesture Tags:** ${p.tags.join(', ')}
+- **Source:** ${p.source}
+- **Insight:** ${p.insight}
+`).join('\n\n');
+
+  const blob = new Blob([markdown], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'apes_players.json';
+  a.download = 'apes_radar.md';
   a.click();
   URL.revokeObjectURL(url);
 });
 
-document.addEventListener('DOMContentLoaded', () => {
-  displayPlayers();
+function showDemoLoaderIfEmpty() {
+  const players = getPlayers();
+  const demoBtn = document.getElementById('load-demo-btn');
+  if (players.length === 0) {
+    demoBtn.style.display = 'block';
+  } else {
+    demoBtn.style.display = 'none';
+  }
+}
+
+document.getElementById('load-demo-btn').addEventListener('click', () => {
+  savePlayers(demoPlayers);
+  populateFilters();
+  applyFilters();
 });
+
+// Init
+initStorage();
+populateFilters();
+applyFilters();
+
+document.getElementById('filter-country').addEventListener('change', applyFilters);
+document.getElementById('filter-role').addEventListener('change', applyFilters);
+document.getElementById('filter-rank').addEventListener('change', applyFilters);
