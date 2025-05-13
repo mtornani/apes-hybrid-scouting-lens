@@ -5,7 +5,7 @@ const demoPlayers = [
     year: 2008,
     role: "Central Midfielder",
     club: "Independiente del Valle U17",
-    video: "https://twitter.com/scoutecuador/status/1234567890",
+    video: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     context: "2 assists vs LDU Quito U17 – Copa Mitad del Mundo",
     tags: ["line-breaking pass", "quick turn", "under pressure"],
     source: "scout verified",
@@ -18,7 +18,7 @@ const demoPlayers = [
     year: 2009,
     role: "Winger (Left)",
     club: "SuperSport United U17",
-    video: "https://twitter.com/africatalents/status/9876543210",
+    video: "https://www.youtube.com/watch?v=Uj1ykZWtPYI",
     context: "1v1 dribble + assist in AFCON U17",
     tags: ["explosive dribbling", "feint", "final pass"],
     source: "local journalist",
@@ -31,7 +31,7 @@ const demoPlayers = [
     year: 2008,
     role: "Centre-Back",
     club: "Atlético Paranaense U17",
-    video: "https://twitter.com/futebolbase/status/1029384756",
+    video: "https://www.youtube.com/watch?v=3GwjfUFyY6M",
     context: "Clean tackle + vertical carry in Copa RS",
     tags: ["anticipation", "clean tackle", "progressive carry"],
     source: "academy coach",
@@ -56,9 +56,7 @@ function savePlayers(players) {
 }
 
 function normalizeVideoUrl(url) {
-  if (url.includes('twitter.com') || url.includes('x.com')) {
-    return url.replace('twitter.com', 'x.com').replace('status', 'embed');
-  } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
     let videoId = url.split('v=')[1] || url.split('/').pop();
     if (videoId.includes('&')) videoId = videoId.split('&')[0];
     return `https://www.youtube.com/embed/${videoId}`;
@@ -69,16 +67,32 @@ function normalizeVideoUrl(url) {
 function renderPlayers(players) {
   const playerList = document.getElementById('player-list');
   playerList.innerHTML = '';
+
   players.forEach(player => {
     const card = document.createElement('div');
     card.className = 'player-card';
+
+    let embedHTML = '';
+    const isYouTube = player.video.includes('youtube.com') || player.video.includes('youtu.be');
+
+    if (isYouTube) {
+      embedHTML = `<iframe src="${normalizeVideoUrl(player.video)}" allowfullscreen></iframe>`;
+    } else {
+      embedHTML = `
+        <div class="embed-fallback">
+          <p style="margin-bottom: 5px;">Video non embeddabile</p>
+          <a href="${player.video}" target="_blank" class="video-button">Apri Video Esterno</a>
+        </div>`;
+    }
+
     card.innerHTML = `
       <h3>${player.name} (${player.rank})</h3>
       <p><strong>Country:</strong> ${player.country}</p>
       <p><strong>Role:</strong> ${player.role}</p>
       <p><strong>Insight:</strong> ${player.insight}</p>
-      <iframe src="${normalizeVideoUrl(player.video)}" allowfullscreen></iframe>
+      ${embedHTML}
     `;
+
     playerList.appendChild(card);
   });
 }
@@ -157,11 +171,7 @@ document.getElementById('export-btn').addEventListener('click', () => {
 function showDemoLoaderIfEmpty() {
   const players = getPlayers();
   const demoBtn = document.getElementById('load-demo-btn');
-  if (players.length === 0) {
-    demoBtn.style.display = 'block';
-  } else {
-    demoBtn.style.display = 'none';
-  }
+  demoBtn.style.display = players.length === 0 ? 'block' : 'none';
 }
 
 document.getElementById('load-demo-btn').addEventListener('click', () => {
@@ -170,7 +180,6 @@ document.getElementById('load-demo-btn').addEventListener('click', () => {
   applyFilters();
 });
 
-// Init
 initStorage();
 populateFilters();
 applyFilters();

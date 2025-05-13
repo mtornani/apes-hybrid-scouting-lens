@@ -13,7 +13,6 @@
   </header>
 
   <main>
-    <!-- Player Entry Form -->
     <section id="entry-form">
       <h2>Add Player</h2>
       <form id="player-form">
@@ -27,11 +26,11 @@
         <input type="text" id="role" required>
         <label for="club">Club:</label>
         <input type="text" id="club" required>
-        <label for="video">Video URL (Twitter/X or YouTube):</label>
+        <label for="video">Video URL:</label>
         <input type="url" id="video" required>
         <label for="context">Context Description:</label>
         <textarea id="context" required></textarea>
-        <label for="tags">Gesture Tags (comma-separated):</label>
+        <label for="tags">Gesture Tags:</label>
         <input type="text" id="tags">
         <label for="source">Source Type:</label>
         <input type="text" id="source" required>
@@ -47,18 +46,13 @@
       </form>
     </section>
 
-    <!-- Radar View -->
     <section id="radar-view">
       <h2>Radar View</h2>
       <div id="filters">
         <label for="filter-country">Filter by Country:</label>
-        <select id="filter-country">
-          <option value="">All</option>
-        </select>
+        <select id="filter-country"><option value="">All</option></select>
         <label for="filter-role">Filter by Role:</label>
-        <select id="filter-role">
-          <option value="">All</option>
-        </select>
+        <select id="filter-role"><option value="">All</option></select>
         <label for="filter-rank">Filter by Rank:</label>
         <select id="filter-rank">
           <option value="">All</option>
