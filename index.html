@@ -46,6 +46,32 @@
       </form>
     </section>
 
+    <section id="quick-add">
+      <h2>Quick Add Player</h2>
+      <div class="quick-entry">
+        <input type="text" id="quick-name" placeholder="Player Name" required>
+        <input type="url" id="quick-video" placeholder="Video URL (YouTube/X)" required>
+
+        <div class="tag-grid">
+          <button class="tag" data-tag="explosive dribbling">Explosive Dribbling</button>
+          <button class="tag" data-tag="line-breaking pass">Line-Breaking Pass</button>
+          <button class="tag" data-tag="anticipation">Anticipation</button>
+          <button class="tag" data-tag="under pressure">Under Pressure</button>
+          <button class="tag" data-tag="clean tackle">Clean Tackle</button>
+          <button class="tag" data-tag="quick turn">Quick Turn</button>
+        </div>
+
+        <div class="swipe-rank">
+          <span>Choose Rank:</span>
+          <span class="rank-option" data-rank="Tattico">Tattico</span>
+          <span class="rank-option" data-rank="Elettrico">Elettrico</span>
+          <span class="rank-option" data-rank="Predatore">Predatore</span>
+        </div>
+
+        <button id="quick-save">Save Quick Player</button>
+      </div>
+    </section>
+
     <section id="radar-view">
       <h2>Radar View</h2>
       <div id="filters">
@@ -70,5 +96,60 @@
   </main>
 
   <script src="app.js"></script>
+  <script>
+    const quickTags = [];
+    let selectedQuickRank = '';
+
+    document.querySelectorAll('.tag').forEach(button => {
+      button.addEventListener('click', () => {
+        button.classList.toggle('selected');
+        const tag = button.dataset.tag;
+        if (quickTags.includes(tag)) {
+          quickTags.splice(quickTags.indexOf(tag), 1);
+        } else {
+          quickTags.push(tag);
+        }
+      });
+    });
+
+    document.querySelectorAll('.rank-option').forEach(option => {
+      option.addEventListener('click', () => {
+        selectedQuickRank = option.dataset.rank;
+        document.querySelectorAll('.rank-option').forEach(opt => opt.classList.remove('selected-rank'));
+        option.classList.add('selected-rank');
+      });
+    });
+
+    document.getElementById('quick-save').addEventListener('click', () => {
+      const player = {
+        name: document.getElementById('quick-name').value || 'Unknown',
+        country: 'Unknown',
+        year: new Date().getFullYear() - 17,
+        role: 'Unknown',
+        club: 'Unknown',
+        video: document.getElementById('quick-video').value,
+        context: 'Auto-generated via Quick Add',
+        tags: [...quickTags],
+        source: 'Quick Scout',
+        rank: selectedQuickRank || 'Tattico',
+        insight: quickTags.length > 0 ? `Emerging traits: ${quickTags.join(', ')}.` : 'No tags selected.'
+      };
+
+      const players = JSON.parse(localStorage.getItem('players')) || [];
+      players.push(player);
+      localStorage.setItem('players', JSON.stringify(players));
+
+      document.getElementById('quick-name').value = '';
+      document.getElementById('quick-video').value = '';
+      quickTags.length = 0;
+      selectedQuickRank = '';
+
+      document.querySelectorAll('.tag').forEach(btn => btn.classList.remove('selected'));
+      document.querySelectorAll('.rank-option').forEach(opt => opt.classList.remove('selected-rank'));
+
+      location.reload();
+    });
+  </script>
 </body>
 </html>
+
