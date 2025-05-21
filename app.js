@@ -13,11 +13,36 @@ const initialPlayers = [
     rank: "Tattico",
     insight: "Calm under pressure and vertical in thought."
   },
-  // Altri giocatori...
+  {
+    name: "Sipho Dlamini",
+    country: "South Africa",
+    year: 2009,
+    role: "Winger (Left)",
+    club: "SuperSport United U17",
+    video: "https://twitter.com/africatalents/status/9876543210",
+    context: "1v1 dribble + assist in AFCON U17",
+    tags: ["explosive dribbling", "feint", "final pass"],
+    source: "local journalist",
+    rank: "Elettrico",
+    insight: "Raw, instinctive, and devastating in short space."
+  },
+  {
+    name: "Thiago Muniz",
+    country: "Brazil",
+    year: 2008,
+    role: "Centre-Back",
+    club: "Atlético Paranaense U17",
+    video: "https://twitter.com/futebolbase/status/1029384756",
+    context: "Clean tackle + vertical carry in Copa RS",
+    tags: ["anticipation", "clean tackle", "progressive carry"],
+    source: "academy coach",
+    rank: "Predatore",
+    insight: "Anticipates, disarms, and builds with quarterback instincts."
+  }
 ];
 
 function loadPlayers() {
-  return JSON.parse(localStorage.getItem('players')) || initialPlayers;
+  return JSON.parse(localStorage.getItem('players')) || [];
 }
 
 function savePlayer(player) {
@@ -33,18 +58,15 @@ function getVideoThumbnail(video) {
   return videoId ? `https://img.youtube.com/vi/${videoId}/0.jpg` : 'placeholder.png';
 }
 
-function displayPlayers(filter = '', ranks = []) {
+function displayPlayers(countryFilter = '', roleFilter = '', rankFilter = '') {
   const players = loadPlayers();
   const playerList = document.getElementById('player-list');
-  const isGrid = playerList.classList.contains('grid');
   playerList.innerHTML = '';
 
   const filteredPlayers = players.filter(player => 
-    (!filter || 
-      player.name.toLowerCase().includes(filter.toLowerCase()) ||
-      player.country.toLowerCase().includes(filter.toLowerCase()) ||
-      player.tags.some(tag => tag.toLowerCase().includes(filter.toLowerCase()))
-    ) && (!ranks.length || ranks.includes(player.rank))
+    (!countryFilter || player.country.toLowerCase() === countryFilter.toLowerCase()) &&
+    (!roleFilter || player.role.toLowerCase() === roleFilter.toLowerCase()) &&
+    (!rankFilter || player.rank.toLowerCase() === rankFilter.toLowerCase())
   );
 
   filteredPlayers.forEach(player => {
@@ -52,7 +74,7 @@ function displayPlayers(filter = '', ranks = []) {
     li.className = 'player-card';
     const thumbnail = getVideoThumbnail(player.video);
     li.innerHTML = `
-      ${thumbnail && isGrid ? `<img src="${thumbnail}" alt="${player.name}">` : ''}
+      ${thumbnail ? `<img src="${thumbnail}" alt="${player.name}" style="display: none;">` : ''}
       <h3>${player.name} (${player.country}, ${player.year})</h3>
       <p><strong>Role:</strong> ${player.role}</p>
       <p><strong>Club:</strong> ${player.club}</p>
@@ -82,16 +104,29 @@ document.querySelectorAll('.tag').forEach(button => {
 });
 
 let selectedRank = 'Tattico';
-document.querySelector('.swipe-rank').addEventListener('swipe', e => {
-  const ranks = ['Tattico', 'Elettrico', 'Predatore'];
-  const currentIndex = ranks.indexOf(selectedRank);
-  if (e.detail.dir === 'left' && currentIndex < ranks.length - 1) {
-    selectedRank = ranks[currentIndex + 1];
-  } else if (e.detail.dir === 'right' && currentIndex > 0) {
-    selectedRank = ranks[currentIndex - 1];
-  }
-  document.querySelectorAll('.rank-option').forEach(opt => {
-    opt.classList.toggle('selected', opt.dataset.rank === selectedRank);
+$(document).ready(function() {
+  $(".swipe-rank").swipe({
+    swipe: function(event, direction) {
+      const ranks = ['Tattico', 'Elettrico', 'Predatore'];
+      const currentIndex = ranks.indexOf(selectedRank);
+      if (direction === 'left' && currentIndex < ranks.length - 1) {
+        selectedRank = ranks[currentIndex + 1];
+      } else if (direction === 'right' && currentIndex > 0) {
+        selectedRank = ranks[currentIndex - 1];
+      }
+      document.querySelectorAll('.rank-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.rank === selectedRank);
+      });
+    }
+  });
+
+  document.querySelectorAll('.rank-option').forEach(option => {
+    option.addEventListener('click', () => {
+      selectedRank = option.dataset.rank;
+      document.querySelectorAll('.rank-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.rank === selectedRank);
+      });
+    });
   });
 });
 
@@ -110,7 +145,11 @@ document.getElementById('quick-save').addEventListener('click', () => {
     insight: tags.join(', ')
   };
   savePlayer(player);
-  displayPlayers();
+  displayPlayers(
+    document.getElementById('filter-country').value,
+    document.getElementById('filter-role').value,
+    document.getElementById('filter-rank').value
+  );
   document.getElementById('name').value = '';
   document.getElementById('video').value = '';
   tags.length = 0;
@@ -134,7 +173,11 @@ document.getElementById('scout-form').addEventListener('submit', e => {
     insight: document.getElementById('insight').value
   };
   savePlayer(player);
-  displayPlayers();
+  displayPlayers(
+    document.getElementById('filter-country').value,
+    document.getElementById('filter-role').value,
+    document.getElementById('filter-rank').value
+  );
   e.target.reset();
 });
 
@@ -147,24 +190,38 @@ document.getElementById('toggle-form').addEventListener('click', () => {
 });
 
 // Filter Logic
-document.getElementById('filter').addEventListener('input', e => {
-  const ranks = Array.from(document.querySelectorAll('.rank-filters input:checked')).map(cb => cb.dataset.rank);
-  displayPlayers(e.target.value, ranks);
+document.getElementById('filter-country').addEventListener('change', () => {
+  displayPlayers(
+    document.getElementById('filter-country').value,
+    document.getElementById('filter-role').value,
+    document.getElementById('filter-rank').value
+  );
 });
 
-document.querySelectorAll('.rank-filters input').forEach(cb => {
-  cb.addEventListener('change', () => {
-    const ranks = Array.from(document.querySelectorAll('.rank-filters input:checked')).map(cb => cb.dataset.rank);
-    displayPlayers(document.getElementById('filter').value, ranks);
-  });
+document.getElementById('filter-role').addEventListener('change', () => {
+  displayPlayers(
+    document.getElementById('filter-country').value,
+    document.getElementById('filter-role').value,
+    document.getElementById('filter-rank').value
+  );
 });
 
-// Toggle View
-document.getElementById('toggle-view').addEventListener('click', () => {
-  const playerList = document.getElementById('player-list');
-  playerList.classList.toggle('grid');
-  document.getElementById('toggle-view').textContent = playerList.classList.contains('grid') ? 'Switch to List View' : 'Switch to Grid View';
-  displayPlayers(document.getElementById('filter').value, Array.from(document.querySelectorAll('.rank-filters input:checked')).map(cb => cb.dataset.rank));
+document.getElementById('filter-rank').addEventListener('change', () => {
+  displayPlayers(
+    document.getElementById('filter-country').value,
+    document.getElementById('filter-role').value,
+    document.getElementById('filter-rank').value
+  );
+});
+
+// Load Demo Radar
+document.getElementById('load-demo').addEventListener('click', () => {
+  localStorage.setItem('players', JSON.stringify(initialPlayers));
+  displayPlayers(
+    document.getElementById('filter-country').value,
+    document.getElementById('filter-role').value,
+    document.getElementById('filter-rank').value
+  );
 });
 
 // Export to Markdown
@@ -189,6 +246,19 @@ ${p.context ? `- **Context**: ${p.context}` : ''}
   a.click();
   URL.revokeObjectURL(url);
 });
+
+// Offline Detection
+window.addEventListener('online', () => {
+  document.getElementById('offline-indicator').style.display = 'none';
+});
+
+window.addEventListener('offline', () => {
+  document.getElementById('offline-indicator').style.display = 'block';
+});
+
+if (!navigator.onLine) {
+  document.getElementById('offline-indicator').style.display = 'block';
+}
 
 // Service Worker Registration
 if ('serviceWorker' in navigator) {
