@@ -1,3 +1,4 @@
+```css
 body {
   font-family: Arial, sans-serif;
   margin: 0;
@@ -27,7 +28,7 @@ h2 {
   margin-bottom: 10px;
 }
 
-form {
+.quick-entry, form {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -55,9 +56,64 @@ button:hover {
   background-color: #218838;
 }
 
+.tag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 5px;
+}
+
+.tag {
+  padding: 8px;
+  background: #e0e0e0;
+  border-radius: 20px;
+  font-size: 0.9em;
+  transition: background 0.2s;
+}
+
+.tag.selected {
+  background: #28a745;
+  color: white;
+}
+
+.swipe-rank {
+  padding: 10px;
+  overflow-x: auto;
+  white-space: nowrap;
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.rank-option {
+  margin: 0 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.rank-option.selected {
+  color: #28a745;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.rank-filters {
+  display: flex;
+  gap: 10px;
+}
+
 #player-list {
   list-style: none;
   padding: 0;
+}
+
+#player-list.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
 }
 
 .player-card {
@@ -66,6 +122,11 @@ button:hover {
   margin-bottom: 10px;
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.player-card img {
+  max-width: 100%;
+  border-radius: 4px;
 }
 
 .player-card h3 {
@@ -81,16 +142,9 @@ button:hover {
   .container {
     padding: 10px;
   }
-  
-  h1 {
-    font-size: 1.5em;
-  }
-  
-  h2 {
-    font-size: 1.2em;
-  }
-  
-  input, select, textarea, button {
-    font-size: 0.9em;
-  }
+  h1 { font-size: 1.5em; }
+  h2 { font-size: 1.2em; }
+  input, select, textarea, button { font-size: 0.9em; }
+  .tag-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
 }
+```
