@@ -1,4 +1,3 @@
-```javascript
 const initialPlayers = [
   {
     name: "Gabriel Sanabria",
@@ -58,6 +57,33 @@ function getVideoThumbnail(video) {
   return videoId ? `https://img.youtube.com/vi/${videoId}/0.jpg` : 'placeholder.png';
 }
 
+function isDuplicate(newPlayer, existingPlayers) {
+  return existingPlayers.some(player => {
+    const nameSimilarity = player.name.toLowerCase().includes(newPlayer.name.toLowerCase());
+    const yearMatch = player.year === newPlayer.year;
+    return nameSimilarity && yearMatch;
+  });
+}
+
+function parseReport(reportText) {
+  const parts = reportText.split(',').map(part => part.trim());
+  if (parts.length < 4) return null;
+  const [name, country, year, role] = parts;
+  return {
+    name: name || 'Unknown',
+    country: country || 'Unknown',
+    year: parseInt(year) || (new Date().getFullYear() - 17),
+    role: role || 'Unknown',
+    club: 'Unknown',
+    video: '',
+    context: '',
+    tags: [],
+    source: 'Scout (parsed)',
+    rank: 'Tattico',
+    insight: ''
+  };
+}
+
 function displayPlayers(countryFilter = '', roleFilter = '', rankFilter = '') {
   const players = loadPlayers();
   const playerList = document.getElementById('player-list');
@@ -69,27 +95,30 @@ function displayPlayers(countryFilter = '', roleFilter = '', rankFilter = '') {
     (!rankFilter || player.rank.toLowerCase() === rankFilter.toLowerCase())
   );
 
-  filteredPlayers.forEach(player => {
-    const li = document.createElement('li');
-    li.className = 'player-card';
-    const thumbnail = getVideoThumbnail(player.video);
-    li.innerHTML = `
-      ${thumbnail ? `<img src="${thumbnail}" alt="${player.name}" style="display: none;">` : ''}
-      <h3>${player.name} (${player.country}, ${player.year})</h3>
-      <p><strong>Role:</strong> ${player.role}</p>
-      <p><strong>Club:</strong> ${player.club}</p>
-      ${player.video ? `<p><strong>Video:</strong> <a href="${player.video}" target="_blank">Watch</a></p>` : ''}
-      ${player.context ? `<p><strong>Context:</strong> ${player.context}</p>` : ''}
-      <p><strong>Tags:</strong> ${player.tags.join(', ')}</p>
-      <p><strong>Source:</strong> ${player.source}</p>
-      <p><strong>Rank:</strong> ${player.rank}</p>
-      <p><strong>Insight:</strong> ${player.insight}</p>
-    `;
-    playerList.appendChild(li);
-  });
+  if (filteredPlayers.length === 0) {
+    playerList.innerHTML = '<li>No players found.</li>';
+  } else {
+    filteredPlayers.forEach(player => {
+      const li = document.createElement('li');
+      li.className = 'player-card';
+      const thumbnail = getVideoThumbnail(player.video);
+      li.innerHTML = `
+        ${thumbnail ? `<img src="${thumbnail}" alt="${player.name}" style="display: none;">` : ''}
+        <h3>${player.name} (${player.country}, ${player.year})</h3>
+        <p><strong>Role:</strong> ${player.role}</p>
+        <p><strong>Club:</strong> ${player.club}</p>
+        ${player.video ? `<p><strong>Video:</strong> <a href="${player.video}" target="_blank">Watch</a></p>` : ''}
+        ${player.context ? `<p><strong>Context:</strong> ${player.context}</p>` : ''}
+        <p><strong>Tags:</strong> ${player.tags.join(', ')}</p>
+        <p><strong>Source:</strong> ${player.source}</p>
+        <p><strong>Rank:</strong> ${player.rank}</p>
+        <p><strong>Insight:</strong> ${player.insight}</p>
+      `;
+      playerList.appendChild(li);
+    });
+  }
 }
 
-// Quick Add Logic
 const tags = [];
 document.querySelectorAll('.tag').forEach(button => {
   button.addEventListener('click', () => {
@@ -144,7 +173,12 @@ document.getElementById('quick-save').addEventListener('click', () => {
     source: 'Scout',
     insight: tags.join(', ')
   };
-  savePlayer(player);
+  const players = loadPlayers();
+  if (isDuplicate(player, players)) {
+    alert('Possible duplicate detected! This player may already exist.');
+  } else {
+    savePlayer(player);
+  }
   displayPlayers(
     document.getElementById('filter-country').value,
     document.getElementById('filter-role').value,
@@ -156,23 +190,42 @@ document.getElementById('quick-save').addEventListener('click', () => {
   document.querySelectorAll('.tag').forEach(btn => btn.classList.remove('selected'));
 });
 
-// Full Form Logic
 document.getElementById('scout-form').addEventListener('submit', e => {
   e.preventDefault();
-  const player = {
-    name: document.getElementById('name-full').value,
-    country: document.getElementById('country').value,
-    year: parseInt(document.getElementById('year').value),
-    role: document.getElementById('role').value,
-    club: document.getElementById('club').value,
-    video: document.getElementById('video-full').value,
-    context: document.getElementById('context').value,
-    tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()),
-    source: document.getElementById('source').value,
-    rank: document.getElementById('rank-full').value,
-    insight: document.getElementById('insight').value
-  };
-  savePlayer(player);
+  let player;
+  const reportText = document.getElementById('report-input').value;
+  if (reportText) {
+    player = parseReport(reportText);
+    if (!player) {
+      alert('Invalid report format! Use: Name, Country, Year, Role');
+      return;
+    }
+    player.video = document.getElementById('video-full').value;
+    player.tags = document.getElementById('tags').value.split(',').map(tag => tag.trim());
+    player.source = document.getElementById('source').value || 'Scout (parsed)';
+    player.rank = document.getElementById('rank-full').value;
+    player.insight = document.getElementById('insight').value;
+  } else {
+    player = {
+      name: document.getElementById('name-full').value,
+      country: document.getElementById('country').value,
+      year: parseInt(document.getElementById('year').value),
+      role: document.getElementById('role').value,
+      club: document.getElementById('club').value,
+      video: document.getElementById('video-full').value,
+      context: document.getElementById('context').value,
+      tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()),
+      source: document.getElementById('source').value,
+      rank: document.getElementById('rank-full').value,
+      insight: document.getElementById('insight').value
+    };
+  }
+  const players = loadPlayers();
+  if (isDuplicate(player, players)) {
+    alert('Possible duplicate detected! This player may already exist.');
+  } else {
+    savePlayer(player);
+  }
   displayPlayers(
     document.getElementById('filter-country').value,
     document.getElementById('filter-role').value,
@@ -181,7 +234,6 @@ document.getElementById('scout-form').addEventListener('submit', e => {
   e.target.reset();
 });
 
-// Toggle Form
 document.getElementById('toggle-form').addEventListener('click', () => {
   const quickEntry = document.querySelector('.quick-entry');
   const fullForm = document.getElementById('scout-form');
@@ -189,7 +241,6 @@ document.getElementById('toggle-form').addEventListener('click', () => {
   fullForm.style.display = fullForm.style.display === 'none' ? 'flex' : 'none';
 });
 
-// Filter Logic
 document.getElementById('filter-country').addEventListener('change', () => {
   displayPlayers(
     document.getElementById('filter-country').value,
@@ -214,7 +265,6 @@ document.getElementById('filter-rank').addEventListener('change', () => {
   );
 });
 
-// Load Demo Radar
 document.getElementById('load-demo').addEventListener('click', () => {
   localStorage.setItem('players', JSON.stringify(initialPlayers));
   displayPlayers(
@@ -222,52 +272,9 @@ document.getElementById('load-demo').addEventListener('click', () => {
     document.getElementById('filter-role').value,
     document.getElementById('filter-rank').value
   );
+  alert('Demo radar loaded successfully!');
 });
 
-// Export to Markdown
 document.getElementById('export-btn').addEventListener('click', () => {
   const players = loadPlayers();
   const markdown = players.map(p => `
-### ${p.name} (${p.country}, ${p.year})
-- **Role**: ${p.role}
-- **Club**: ${p.club}
-${p.video ? `- **Video**: [Watch](${p.video})` : ''}
-${p.context ? `- **Context**: ${p.context}` : ''}
-- **Tags**: ${p.tags.join(', ')}
-- **Source**: ${p.source}
-- **Rank**: ${p.rank}
-- **Insight**: ${p.insight}
-  `).join('\n');
-  const blob = new Blob([markdown], { type: 'text/markdown' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'apes_players.md';
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
-// Offline Detection
-window.addEventListener('online', () => {
-  document.getElementById('offline-indicator').style.display = 'none';
-});
-
-window.addEventListener('offline', () => {
-  document.getElementById('offline-indicator').style.display = 'block';
-});
-
-if (!navigator.onLine) {
-  document.getElementById('offline-indicator').style.display = 'block';
-}
-
-// Service Worker Registration
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/apes-hybrid-scouting-lens/sw.js');
-  });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  displayPlayers();
-});
-```
