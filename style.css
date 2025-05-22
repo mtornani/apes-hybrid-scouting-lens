@@ -1,76 +1,55 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
+```css
 body {
   font-family: Arial, sans-serif;
-  line-height: 1.6;
-  padding: 10px;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+}
+
+.container {
   max-width: 800px;
   margin: 0 auto;
-  background-color: #f4f4f4;
+  padding: 20px;
 }
 
 header {
   text-align: center;
-  padding: 20px 0;
+  margin-bottom: 20px;
 }
 
-header h1 {
-  font-size: 1.8em;
+h1 {
+  font-size: 2em;
   color: #333;
-}
-
-header p {
-  color: #666;
-}
-
-section {
-  margin: 20px 0;
-  padding: 15px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 h2 {
-  font-size: 1.4em;
+  font-size: 1.5em;
+  color: #444;
   margin-bottom: 10px;
-  color: #333;
 }
 
-form {
+form, .quick-entry {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-bottom: 20px;
 }
 
 label {
   font-weight: bold;
-  color: #444;
 }
 
-input,
-select,
-textarea {
-  padding: 8px;
+input, select, textarea {
+  padding: 10px;
+  font-size: 1em;
   border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 1em;
-  width: 100%;
-}
-
-textarea {
-  resize: vertical;
-  min-height: 80px;
 }
 
 button {
   padding: 10px;
-  background: #007bff;
-  color: #fff;
+  background-color: #007bff;
+  color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -78,75 +57,21 @@ button {
 }
 
 button:hover {
-  background: #0056b3;
+  background-color: #0056b3;
 }
 
-#player-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-top: 15px;
-}
-
-.player-card {
-  padding: 15px;
-  background: #fafafa;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-}
-
-.player-card h3 {
-  font-size: 1.2em;
-  color: #222;
-}
-
-.player-card p {
-  margin: 5px 0;
-  color: #555;
-}
-
-iframe {
-  width: 100%;
-  height: 200px;
-  border: none;
-  border-radius: 4px;
-  margin: 10px 0;
-}
-
-#filters {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-@media (min-width: 600px) {
-  #filters {
-    flex-direction: row;
-    gap: 15px;
-  }
-
-  #filters select {
-    flex: 1;
-  }
-}
-
-/* --- QUICK ADD UI --- */
 .tag-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 6px;
-  margin-top: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 5px;
 }
 
 .tag {
   padding: 8px;
-  background: #ddd;
-  border: none;
+  background: #e0e0e0;
   border-radius: 20px;
   font-size: 0.9em;
-  cursor: pointer;
-  transition: background 0.3s;
+  transition: background 0.2s;
 }
 
 .tag.selected {
@@ -155,31 +80,65 @@ iframe {
 }
 
 .swipe-rank {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  font-weight: bold;
-  flex-wrap: wrap;
+  padding: 10px;
+  overflow-x: auto;
+  white-space: nowrap;
+  background: #f0f0f0;
+  border-radius: 4px;
+  user-select: none;
 }
 
 .rank-option {
-  padding: 6px 12px;
-  border-radius: 5px;
+  margin: 0 10px;
+  font-weight: bold;
   cursor: pointer;
-  background: #eee;
-  border: 1px solid #ccc;
 }
 
-.rank-option.selected-rank {
-  background: #007bff;
-  color: white;
-  border-color: #007bff;
+.rank-option.selected {
+  color: #28a745;
+  border-bottom: 2px solid #28a745;
 }
 
-.quick-entry {
+.controls {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 10px;
-  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
+.controls label {
+  margin-right: 5px;
+}
+
+#player-list {
+  list-style: none;
+  padding: 0;
+}
+
+.player-card {
+  background: white;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.player-card h3 {
+  margin: 0 0 10px;
+  font-size: 1.2em;
+}
+
+.player-card p {
+  margin: 5px 0;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 10px;
+  }
+  h1 { font-size: 1.5em; }
+  h2 { font-size: 1.2em; }
+  input, select, textarea, button { font-size: 0.9em; }
+  .tag-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
+}
+```

@@ -1,155 +1,110 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>APES – Hybrid Scouting Lens</title>
+  <meta name="theme-color" content="#28a745">
+  <link rel="manifest" href="manifest.json">
+  <title>APES - Hybrid Scouting Lens</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>APES</h1>
-    <p>Hybrid Scouting Lens</p>
-  </header>
-
-  <main>
-    <section id="entry-form">
+  <div class="container">
+    <header>
+      <h1>APES</h1>
+      <p>Hybrid Scouting Lens for U17 Football Talent</p>
+      <div id="offline-indicator" style="display: none; color: red;">Offline Mode</div>
+    </header>
+    
+    <section id="player-form">
       <h2>Add Player</h2>
-      <form id="player-form">
-        <label for="name">Name:</label>
-        <input type="text" id="name" required>
-        <label for="country">Country:</label>
-        <input type="text" id="country" required>
-        <label for="year">Year of Birth:</label>
-        <input type="number" id="year" min="2000" max="2010" required>
-        <label for="role">Role:</label>
-        <input type="text" id="role" required>
-        <label for="club">Club:</label>
-        <input type="text" id="club" required>
-        <label for="video">Video URL:</label>
-        <input type="url" id="video" required>
-        <label for="context">Context Description:</label>
-        <textarea id="context" required></textarea>
-        <label for="tags">Gesture Tags:</label>
-        <input type="text" id="tags">
-        <label for="source">Source Type:</label>
-        <input type="text" id="source" required>
-        <label for="rank">APES Rank:</label>
-        <select id="rank" required>
+      <form id="scout-form">
+        <label>Name:</label>
+        <input type="text" id="name-full" placeholder="Player Name" required>
+        <label>Country:</label>
+        <input type="text" id="country" placeholder="Country" required>
+        <label>Year of Birth:</label>
+        <input type="number" id="year" placeholder="Birth Year" required>
+        <label>Role:</label>
+        <input type="text" id="role" placeholder="Role" required>
+        <label>Club:</label>
+        <input type="text" id="club" placeholder="Club" required>
+        <label>Video URL:</label>
+        <input type="url" id="video-full" placeholder="Video URL (YouTube/X)">
+        <label>Context Description:</label>
+        <input type="text" id="context" placeholder="Context (e.g., match highlight)">
+        <label>Gesture Tags:</label>
+        <input type="text" id="tags" placeholder="Tags (comma-separated)">
+        <label>Source Type:</label>
+        <input type="text" id="source" placeholder="Source (e.g., scout, journalist)">
+        <label>APES Rank:</label>
+        <select id="rank-full" required>
+          <option value="" disabled selected>Select Rank</option>
           <option value="Tattico">Tattico</option>
           <option value="Elettrico">Elettrico</option>
           <option value="Predatore">Predatore</option>
         </select>
-        <label for="insight">Short Insight:</label>
-        <textarea id="insight" required></textarea>
+        <label>Short Insight:</label>
+        <textarea id="insight" placeholder="Scouting Insight" rows="4"></textarea>
         <button type="submit">Add Player</button>
       </form>
-    </section>
-
-    <section id="quick-add">
       <h2>Quick Add Player</h2>
       <div class="quick-entry">
-        <input type="text" id="quick-name" placeholder="Player Name" required>
-        <input type="url" id="quick-video" placeholder="Video URL (YouTube/X)" required>
-
+        <input type="text" id="name" placeholder="Player Name" required>
+        <input type="url" id="video" placeholder="Video URL (YouTube/X)">
         <div class="tag-grid">
           <button class="tag" data-tag="explosive dribbling">Explosive Dribbling</button>
           <button class="tag" data-tag="line-breaking pass">Line-Breaking Pass</button>
-          <button class="tag" data-tag="anticipation">Anticipation</button>
-          <button class="tag" data-tag="under pressure">Under Pressure</button>
-          <button class="tag" data-tag="clean tackle">Clean Tackle</button>
+          <button class="tag" data-tag="calm under pressure">Calm Under Pressure</button>
           <button class="tag" data-tag="quick turn">Quick Turn</button>
+          <button class="tag" data-tag="anticipation">Anticipation</button>
+          <button class="tag" data-tag="clean tackle">Clean Tackle</button>
         </div>
-
         <div class="swipe-rank">
-          <span>Choose Rank:</span>
+          <span>Choose Rank: </span>
           <span class="rank-option" data-rank="Tattico">Tattico</span>
           <span class="rank-option" data-rank="Elettrico">Elettrico</span>
           <span class="rank-option" data-rank="Predatore">Predatore</span>
         </div>
-
         <button id="quick-save">Save Quick Player</button>
+        <button id="toggle-form">Use Full Form</button>
       </div>
     </section>
-
-    <section id="radar-view">
+    
+    <section id="radar-list">
       <h2>Radar View</h2>
-      <div id="filters">
-        <label for="filter-country">Filter by Country:</label>
-        <select id="filter-country"><option value="">All</option></select>
-        <label for="filter-role">Filter by Role:</label>
-        <select id="filter-role"><option value="">All</option></select>
-        <label for="filter-rank">Filter by Rank:</label>
+      <div class="controls">
+        <label>Filter by Country:</label>
+        <select id="filter-country">
+          <option value="">All</option>
+          <option value="Ecuador">Ecuador</option>
+          <option value="South Africa">South Africa</option>
+          <option value="Brazil">Brazil</option>
+        </select>
+        <label>Filter by Role:</label>
+        <select id="filter-role">
+          <option value="">All</option>
+          <option value="Central Midfielder">Central Midfielder</option>
+          <option value="Winger (Left)">Winger (Left)</option>
+          <option value="Centre-Back">Centre-Back</option>
+        </select>
+        <label>Filter by Rank:</label>
         <select id="filter-rank">
           <option value="">All</option>
           <option value="Tattico">Tattico</option>
           <option value="Elettrico">Elettrico</option>
           <option value="Predatore">Predatore</option>
         </select>
+        <button id="load-demo">Load Demo Radar</button>
+        <button id="export-btn">Export Radar as Markdown</button>
       </div>
-      <div id="player-list"></div>
-      <div id="demo-loader" style="margin-top: 10px;">
-        <button id="load-demo-btn" style="display: none;">🎯 Carica radar demo</button>
-      </div>
-      <button id="export-btn">Export Radar as Markdown</button>
+      <ul id="player-list"></ul>
     </section>
-  </main>
-
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.touchswipe/1.6.19/jquery.touchSwipe.min.js"></script>
   <script src="app.js"></script>
-  <script>
-    const quickTags = [];
-    let selectedQuickRank = '';
-
-    document.querySelectorAll('.tag').forEach(button => {
-      button.addEventListener('click', () => {
-        button.classList.toggle('selected');
-        const tag = button.dataset.tag;
-        if (quickTags.includes(tag)) {
-          quickTags.splice(quickTags.indexOf(tag), 1);
-        } else {
-          quickTags.push(tag);
-        }
-      });
-    });
-
-    document.querySelectorAll('.rank-option').forEach(option => {
-      option.addEventListener('click', () => {
-        selectedQuickRank = option.dataset.rank;
-        document.querySelectorAll('.rank-option').forEach(opt => opt.classList.remove('selected-rank'));
-        option.classList.add('selected-rank');
-      });
-    });
-
-    document.getElementById('quick-save').addEventListener('click', () => {
-      const player = {
-        name: document.getElementById('quick-name').value || 'Unknown',
-        country: 'Unknown',
-        year: new Date().getFullYear() - 17,
-        role: 'Unknown',
-        club: 'Unknown',
-        video: document.getElementById('quick-video').value,
-        context: 'Auto-generated via Quick Add',
-        tags: [...quickTags],
-        source: 'Quick Scout',
-        rank: selectedQuickRank || 'Tattico',
-        insight: quickTags.length > 0 ? `Emerging traits: ${quickTags.join(', ')}.` : 'No tags selected.'
-      };
-
-      const players = JSON.parse(localStorage.getItem('players')) || [];
-      players.push(player);
-      localStorage.setItem('players', JSON.stringify(players));
-
-      document.getElementById('quick-name').value = '';
-      document.getElementById('quick-video').value = '';
-      quickTags.length = 0;
-      selectedQuickRank = '';
-
-      document.querySelectorAll('.tag').forEach(btn => btn.classList.remove('selected'));
-      document.querySelectorAll('.rank-option').forEach(opt => opt.classList.remove('selected-rank'));
-
-      location.reload();
-    });
-  </script>
 </body>
 </html>
-
+```
