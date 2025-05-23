@@ -278,3 +278,45 @@ document.getElementById('load-demo').addEventListener('click', () => {
 document.getElementById('export-btn').addEventListener('click', () => {
   const players = loadPlayers();
   const markdown = players.map(p => `
+### ${p.name} (${p.country}, ${p.year})
+- **Role**: ${p.role}
+- **Club**: ${p.club}
+${p.video ? `- **Video**: [Watch](${p.video})` : ''}
+${p.context ? `- **Context**: ${p.context}` : ''}
+- **Tags**: ${p.tags.join(', ')}
+- **Source**: ${p.source}
+- **Rank**: ${p.rank}
+- **Insight**: ${p.insight}
+  `).join('\n');
+  const blob = new Blob([markdown], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'apes_players.md';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+window.addEventListener('online', () => {
+  document.getElementById('offline-indicator').style.display = 'none';
+});
+
+window.addEventListener('offline', () => {
+  document.getElementById('offline-indicator').style.display = 'block';
+});
+
+if (!navigator.onLine) {
+  document.getElementById('offline-indicator').style.display = 'block';
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/apes-hybrid-scouting-lens/sw.js').catch(err => {
+      console.error('Service Worker registration failed:', err);
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  displayPlayers();
+});
