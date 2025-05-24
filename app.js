@@ -1,5 +1,5 @@
 <!-- File: app.js
-   Changes: Implement LLM post-ricerca with T5-small, Replace parsePlayerPost with extractPlayerDataWithLLM, Add fallback and UX, Inject CSE with provided ID -->
+   Changes: Remove DuckDuckGo search logic, Use Google CSE for search results -->
 document.addEventListener('DOMContentLoaded', async () => {
   await initializeModel();
 
@@ -236,52 +236,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   }
 
-  // Barra di ricerca con DuckDuckGo
-  document.getElementById('search-btn').addEventListener('click', async () => {
-    const query = document.getElementById('search-bar').value;
-    const searchResultsDiv = document.getElementById('search-results');
-    if (query) {
-      try {
-        const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1`);
-        const data = await response.json();
-        const results = data.RelatedTopics || [];
-        const filteredResults = results.filter(item => item.Text && item.FirstURL).slice(0, 5);
-        if (filteredResults.length > 0) {
-          searchResultsDiv.innerHTML = filteredResults.map(item => `
-            <div class="search-result">
-              <h4>${item.Text.split(' - ')[0]}</h4>
-              <p>${item.Text}</p>
-              <a href="${item.FirstURL}" target="_blank">Vedi fonte</a>
-              <button class="create-profile-btn" data-text="${item.Text}">Crea Profilo</button>
-            </div>
-          `).join('');
-          document.querySelectorAll('.create-profile-btn').forEach(button => {
-            button.addEventListener('click', async () => {
-              const playerData = await extractPlayerDataWithLLM(button.dataset.text);
-              if (playerData) {
-                document.getElementById('name-full').value = playerData.name;
-                document.getElementById('country').value = playerData.country;
-                document.getElementById('year').value = playerData.year;
-                document.getElementById('role').value = playerData.role;
-                document.getElementById('video-full').value = playerData.video;
-                document.getElementById('context').value = playerData.context;
-                document.getElementById('tags').value = playerData.tags.join(', ');
-                document.getElementById('insight').value = playerData.insight;
-                document.getElementById('source').value = 'DuckDuckGo Search';
-              }
-            });
-          });
-        } else {
-          searchResultsDiv.innerHTML = '<p>Nessun risultato trovato. Prova una query diversa.</p>';
-        }
-      } catch (error) {
-        searchResultsDiv.innerHTML = '<p>Errore nella ricerca. Controlla la connessione.</p>';
-      }
-    } else {
-      searchResultsDiv.innerHTML = '<p>Inserisci una query per cercare.</p>';
-    }
-  });
-
   // Analisi del post incollato
   document.getElementById('analyze-post-btn').addEventListener('click', async () => {
     const postText = document.getElementById('scouting-post').value;
@@ -355,7 +309,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tagsInput = document.getElementById('tags').value;
     const tags = tagsInput.split(',').map(tag => tag.trim()).filter(t => t);
     const insightStyle = document.querySelector('input[name="insight-style"]:checked')?.value || 'narrative';
-    const insight = await generateInsight(tags, insightStyle); // Simuliamo un delay per lo spinner
+    const insight = await generateInsight(tags, insightStyle);
     document.getElementById('insight').value = insight;
     spinner.style.display = 'none';
   });
@@ -403,10 +357,9 @@ ${p.context ? `- **Contesto**: ${p.context}` : ''}
 
   // Overlay per CSE_ID
   const cseOverlay = document.getElementById('cse-overlay');
-  const cseId = localStorage.getItem('cseId') || 'c12f53951c8884cfd'; // Usa il tuo CSE_ID come default
-  if (!localStorage.getItem('cseId')) {
+  const cseId = localStorage.getItem('cseId');
+  if (!cseId) {
     cseOverlay.style.display = 'block';
-    document.getElementById('cse-id-input').value = cseId;
   } else {
     injectCSE(cseId);
   }
@@ -421,18 +374,60 @@ ${p.context ? `- **Contesto**: ${p.context}` : ''}
   });
 
   document.getElementById('cancel-cse-id').addEventListener('click', () => {
-    localStorage.setItem('cseId', cseId); // Usa il default se annullato
-    injectCSE(cseId);
     cseOverlay.style.display = 'none';
   });
 
   function injectCSE(cseId) {
     const script = document.createElement('script');
-    script.src = `https://cse.google.com/cse.js?cx=${cseId}`;
+    script.src = `https://cse.google.com/cse.js?cx=CSE_ID_HERE`; // Sostituisci CSE_ID_HERE con il tuo CSE_ID
     document.body.appendChild(script);
     const gcseDiv = document.querySelector('.gcse-search');
-    if (gcseDiv) gcseDiv.innerHTML = ''; // Pulisci per reinizializzazione
+    gcseDiv.style.display = 'block';
   }
+
+  // Aggiungi listener per i risultati di Google CSE
+  window.addEventListener('load', () => {
+    const searchResultsDiv = document.getElementById('search-results');
+    const observer = new MutationObserver(async (mutations) => {
+      mutations.forEach(mutation => {
+        if (mutation.addedNodes.length) {
+          const results = document.querySelectorAll('.gsc-result');
+          searchResultsDiv.innerHTML = '';
+          results.forEach(result => {
+            const title = result.querySelector('.gs-title')?.textContent || 'No Title';
+            const snippet = result.querySelector('.gs-snippet')?.textContent || '';
+            const link = result.querySelector('.gs-title a')?.href || '#';
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'search-result';
+            resultDiv.innerHTML = `
+              <h4>${title}</h4>
+              <p>${snippet}</p>
+              <a href="${link}" target="_blank">Vedi fonte</a>
+              <button class="create-profile-btn" data-text="${snippet}">Crea Profilo</button>
+            `;
+            searchResultsDiv.appendChild(resultDiv);
+          });
+          document.querySelectorAll('.create-profile-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+              const playerData = await extractPlayerDataWithLLM(button.dataset.text);
+              if (playerData) {
+                document.getElementById('name-full').value = playerData.name;
+                document.getElementById('country').value = playerData.country;
+                document.getElementById('year').value = playerData.year;
+                document.getElementById('role').value = playerData.role;
+                document.getElementById('video-full').value = playerData.video;
+                document.getElementById('context').value = playerData.context;
+                document.getElementById('tags').value = playerData.tags.join(', ');
+                document.getElementById('insight').value = playerData.insight;
+                document.getElementById('source').value = 'Google CSE Search';
+              }
+            });
+          });
+        }
+      });
+    });
+    observer.observe(document.querySelector('.gcse-search'), { childList: true, subtree: true });
+  });
 
   // Offline support
   window.addEventListener('online', () => document.getElementById('offline-indicator').style.display = 'none');
