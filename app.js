@@ -40,14 +40,24 @@ const initialPlayers = [
   }
 ];
 
-// Mappa di tag predefiniti per il suggerimento
+// Mappa di tag predefiniti per il suggerimento, espansa con sinonimi e combinazioni
 const tagMap = {
   "dribbling": ["explosive dribbling", "feint"],
+  "dribble": ["explosive dribbling", "feint"],
   "assist": ["final pass", "line-breaking pass"],
+  "pass": ["line-breaking pass", "final pass"],
   "calm": ["calm under pressure"],
+  "pressure": ["calm under pressure"],
   "tackle": ["clean tackle", "anticipation"],
+  "defend": ["clean tackle", "anticipation"],
   "carry": ["progressive carry"],
-  "turn": ["quick turn"]
+  "run": ["progressive carry"],
+  "turn": ["quick turn"],
+  "spin": ["quick turn"],
+  "fast": ["explosive dribbling", "quick turn"],
+  "quick": ["quick turn", "explosive dribbling"],
+  "vertical": ["line-breaking pass", "progressive carry"],
+  "creative": ["final pass", "line-breaking pass"]
 };
 
 // Mappa di insight basati sui tag
@@ -59,7 +69,8 @@ const insightMap = {
   "anticipation": "Grande capacità di lettura del gioco.",
   "progressive carry": "Porta il pallone in avanti con sicurezza.",
   "quick turn": "Rapido nei cambi di direzione.",
-  "line-breaking pass": "Capace di spezzare le linee con passaggi incisivi."
+  "line-breaking pass": "Capace di spezzare le linee con passaggi incisivi.",
+  "feint": "Efficace nell’ingannare gli avversari con finte."
 };
 
 function loadPlayers() {
@@ -69,6 +80,12 @@ function loadPlayers() {
 function savePlayer(player) {
   const players = loadPlayers();
   players.push(player);
+  localStorage.setItem('players', JSON.stringify(players));
+}
+
+function deletePlayer(index) {
+  const players = loadPlayers();
+  players.splice(index, 1);
   localStorage.setItem('players', JSON.stringify(players));
 }
 
@@ -120,7 +137,7 @@ function displayPlayers(countryFilter = '', roleFilter = '', rankFilter = '') {
   if (filteredPlayers.length === 0) {
     playerList.innerHTML = '<li>No players found.</li>';
   } else {
-    filteredPlayers.forEach(player => {
+    filteredPlayers.forEach((player, index) => {
       const li = document.createElement('li');
       li.className = 'player-card';
       const thumbnail = getVideoThumbnail(player.video);
@@ -135,8 +152,21 @@ function displayPlayers(countryFilter = '', roleFilter = '', rankFilter = '') {
         <p><strong>Source:</strong> ${player.source}</p>
         <p><strong>Rank:</strong> ${player.rank}</p>
         <p><strong>Insight:</strong> ${player.insight}</p>
+        <button class="delete-btn" data-index="${index}">Delete</button>
       `;
       playerList.appendChild(li);
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const index = e.target.dataset.index;
+        deletePlayer(index);
+        displayPlayers(
+          document.getElementById('filter-country').value,
+          document.getElementById('filter-role').value,
+          document.getElementById('filter-rank').value
+        );
+      });
     });
   }
 }
@@ -193,7 +223,7 @@ document.getElementById('quick-save').addEventListener('click', () => {
     club: 'Unknown',
     context: '',
     source: 'Scout',
-    insight: tags.map(tag => insightMap[tag] || '').join(' ')
+    insight: tags.map(tag => insightMap[tag] || `Skilled in ${tag}.`).join(' ')
   };
   const players = loadPlayers();
   if (isDuplicate(player, players)) {
@@ -213,21 +243,44 @@ document.getElementById('quick-save').addEventListener('click', () => {
 });
 
 async function suggestTags(contextText) {
+  if (!contextText) return [];
   const words = contextText.toLowerCase().split(/\W+/);
   let suggestedTags = new Set();
-  
+
+  // Cerca corrispondenze dirette
   words.forEach(word => {
     if (tagMap[word]) {
       tagMap[word].forEach(tag => suggestedTags.add(tag));
     }
   });
 
+  // Cerca combinazioni di parole (es. "dribbling rapido")
+  for (let i = 0; i < words.length - 1; i++) {
+    const phrase = `${words[i]} ${words[i + 1]}`;
+    const phraseWords = phrase.split(' ');
+    phraseWords.forEach(word => {
+      if (tagMap[word]) {
+        tagMap[word].forEach(tag => suggestedTags.add(tag));
+      }
+    });
+  }
+
+  // Fallback: se non ci sono corrispondenze, suggerisci un tag generico
+  if (suggestedTags.size === 0) {
+    words.forEach(word => {
+      if (word.length > 3) { // Ignora parole troppo corte
+        suggestedTags.add(word);
+      }
+    });
+  }
+
   return Array.from(suggestedTags);
 }
 
 function generateInsight(tags) {
   if (!tags || tags.length === 0) return "No insight available.";
-  return tags.map(tag => insightMap[tag] || '').filter(Boolean).join(' ') || "Insight based on tags.";
+  const insights = tags.map(tag => insightMap[tag] || `Skilled in ${tag}.`).filter(Boolean);
+  return insights.length > 0 ? insights.join(' ') : "Insight based on tags.";
 }
 
 document.getElementById('context').addEventListener('input', async () => {
@@ -256,9 +309,13 @@ document.getElementById('context').addEventListener('input', async () => {
 });
 
 document.getElementById('generate-insight').addEventListener('click', () => {
+  console.log('Generate Insight clicked');
   const tagsInput = document.getElementById('tags').value;
+  console.log('Tags input:', tagsInput);
   const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()) : [];
+  console.log('Parsed tags:', tags);
   const insight = generateInsight(tags);
+  console.log('Generated insight:', insight);
   document.getElementById('insight').value = insight;
 });
 
