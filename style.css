@@ -1,158 +1,189 @@
+<!-- File: style.css
+   Changes: Add styling for overlay and spinner -->
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Arial', sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f4f4f4;
+  background-color: #f0f2f5;
+  color: #333;
 }
 
 .container {
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 15px;
 }
 
 header {
   text-align: center;
-  margin-bottom: 20px;
+  padding: 20px;
+  background-color: #28a745;
+  color: white;
+  border-radius: 10px;
 }
 
 h1 {
-  color: #28a745;
+  margin: 0;
+  font-size: 2em;
 }
 
 h2 {
-  color: #333;
+  color: #2c3e50;
+  margin-top: 20px;
 }
 
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.scouting-section, .radar-section {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.search-bar, .post-analysis {
   margin-bottom: 20px;
 }
 
 label {
+  display: block;
   font-weight: bold;
+  margin-bottom: 5px;
+  color: #34495e;
 }
 
-input, select, textarea {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+input, textarea, select {
   width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
   box-sizing: border-box;
+  font-size: 1em;
 }
 
 button {
-  padding: 10px;
+  padding: 10px 15px;
   background-color: #28a745;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 5px;
   cursor: pointer;
+  font-size: 1em;
 }
 
 button:hover {
   background-color: #218838;
 }
 
-.quick-entry {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+#search-results, #scouting-post-suggestions {
+  margin-top: 10px;
+  padding: 10px;
+  background: #ecf0f1;
+  border-radius: 5px;
 }
 
-.tag-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+.search-result, .suggestion-card {
+  margin-bottom: 10px;
+  padding: 10px;
+  background: #fff;
+  border-left: 4px solid #28a745;
 }
 
-.tag {
-  padding: 5px 10px;
-  background-color: #ddd;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+.search-result h4, .suggestion-card h3 {
+  margin: 0 0 5px;
+  color: #2c3e50;
 }
 
-.tag.selected {
-  background-color: #28a745;
+.create-profile-btn {
+  background-color: #3498db;
+  margin-top: 5px;
+}
+
+.create-profile-btn:hover {
+  background-color: #2980b9;
+}
+
+#offline-indicator {
+  text-align: center;
+  padding: 10px;
+  background: #e74c3c;
   color: white;
-}
-
-.swipe-rank {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.rank-option {
-  padding: 5px 10px;
-  background-color: #ddd;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.rank-option.selected {
-  background-color: #28a745;
-  color: white;
+  border-radius: 5px;
 }
 
 .controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-#player-list {
-  list-style: none;
-  padding: 0;
 }
 
 .player-card {
-  background-color: white;
+  background: #fff;
   padding: 15px;
   margin-bottom: 10px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .delete-btn {
-  background-color: #ff4444;
+  background-color: #e74c3c;
   color: white;
   border: none;
   padding: 5px 10px;
-  margin-top: 10px;
-  cursor: pointer;
   border-radius: 3px;
 }
 
 .delete-btn:hover {
-  background-color: #cc0000;
+  background-color: #c0392b;
 }
 
-.suggested-tag {
-  padding: 5px 10px;
-  background-color: #e0e0e0;
-  border: none;
-  border-radius: 4px;
-  margin: 2px;
-  cursor: pointer;
-}
-
-.suggested-tag:hover {
-  background-color: #28a745;
-  color: white;
-}
-
-.insight-style-label {
-  margin-right: 15px;
+/* Overlay styling */
+.overlay {
   display: flex;
+  justify-content: center;
   align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
 }
 
-.insight-style-label input[type="radio"] {
-  margin-right: 5px;
+.overlay-content {
+  background: white;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+}
+
+.overlay-content input {
+  margin-bottom: 10px;
+}
+
+.overlay-content button {
+  margin: 0 5px;
+}
+
+/* Spinner styling */
+.spinner {
+  font-size: 1em;
+  margin-left: 5px;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 10px;
+  }
+  input, textarea, select, button {
+    font-size: 0.9em;
+  }
+  .controls {
+    flex-direction: column;
+  }
 }
