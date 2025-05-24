@@ -40,27 +40,7 @@ const initialPlayers = [
   }
 ];
 
-// Mappa di tag predefiniti per il suggerimento, espansa con sinonimi e combinazioni
-const tagMap = {
-  "dribbling": ["explosive dribbling", "feint"],
-  "dribble": ["explosive dribbling", "feint"],
-  "assist": ["final pass", "line-breaking pass"],
-  "pass": ["line-breaking pass", "final pass"],
-  "calm": ["calm under pressure"],
-  "pressure": ["calm under pressure"],
-  "tackle": ["clean tackle", "anticipation"],
-  "defend": ["clean tackle", "anticipation"],
-  "carry": ["progressive carry"],
-  "run": ["progressive carry"],
-  "turn": ["quick turn"],
-  "spin": ["quick turn"],
-  "fast": ["explosive dribbling", "quick turn"],
-  "quick": ["quick turn", "explosive dribbling"],
-  "vertical": ["line-breaking pass", "progressive carry"],
-  "creative": ["final pass", "line-breaking pass"]
-};
-
-// Mappa di insight basati sui tag
+// Mappa di insight basati sui tag (usata anche per mappare tag generati)
 const insightMap = {
   "explosive dribbling": "Abile nel superare gli avversari con dribbling rapidi.",
   "final pass": "Efficace nel fornire passaggi decisivi.",
@@ -72,6 +52,22 @@ const insightMap = {
   "line-breaking pass": "Capace di spezzare le linee con passaggi incisivi.",
   "feint": "Efficace nell’ingannare gli avversari con finte."
 };
+
+// Inizializza il modello LLM
+let tokenizer, model;
+
+async function initializeModel() {
+  if (!model) {
+    try {
+      const { AutoTokenizer, AutoModelForTokenClassification } = window['@xenova/transformers'];
+      tokenizer = await AutoTokenizer.from_pretrained('distilbert-base-uncased');
+      model = await AutoModelForTokenClassification.from_pretrained('distilbert-base-uncased');
+      console.log('Model initialized successfully');
+    } catch (error) {
+      console.error('Error initializing model:', error);
+    }
+  }
+}
 
 function loadPlayers() {
   return JSON.parse(localStorage.getItem('players')) || [];
@@ -243,43 +239,44 @@ document.getElementById('quick-save').addEventListener('click', () => {
 });
 
 async function suggestTags(contextText) {
-  if (!contextText) return [];
-  const words = contextText.toLowerCase().split(/\W+/);
-  let suggestedTags = new Set();
+  await initializeModel(); // Assicura che il modello sia pronto
+  if (!contextText || !model || !tokenizer) return [];
 
-  // Cerca corrispondenze dirette
-  words.forEach(word => {
-    if (tagMap[word]) {
-      tagMap[word].forEach(tag => suggestedTags.add(tag));
-    }
-  });
+  try {
+    const inputs = tokenizer(contextText, { max_length: 128, truncation: true, return_tensors: 'array' });
+    const outputs = await model(inputs);
+    const logits = outputs.logits;
+    const predictions = Array.from(logits[0]).map((score, idx) => ({ token: tokenizer.decode([idx]), score }));
 
-  // Cerca combinazioni di parole (es. "dribbling rapido")
-  for (let i = 0; i < words.length - 1; i++) {
-    const phrase = `${words[i]} ${words[i + 1]}`;
-    const phraseWords = phrase.split(' ');
-    phraseWords.forEach(word => {
-      if (tagMap[word]) {
-        tagMap[word].forEach(tag => suggestedTags.add(tag));
+    // Filtra i token più rilevanti (es. score > 0.5)
+    const relevantTokens = predictions
+      .filter(p => p.score > 0.5)
+      .map(p => p.token.toLowerCase())
+      .filter(token => token.length > 3 && !['the', 'and', 'in'].includes(token));
+
+    // Mappa i token a tag noti o crea tag generici
+    const suggestedTags = new Set();
+    relevantTokens.forEach(token => {
+      const matchingTag = Object.keys(insightMap).find(tag => tag.includes(token));
+      if (matchingTag) {
+        suggestedTags.add(matchingTag);
+      } else if (token in insightMap) {
+        suggestedTags.add(token);
+      } else {
+        suggestedTags.add(`skill_${token}`);
       }
     });
-  }
 
-  // Fallback: se non ci sono corrispondenze, suggerisci un tag generico
-  if (suggestedTags.size === 0) {
-    words.forEach(word => {
-      if (word.length > 3) { // Ignora parole troppo corte
-        suggestedTags.add(word);
-      }
-    });
+    return Array.from(suggestedTags).slice(0, 5); // Limita a 5 tag suggeriti
+  } catch (error) {
+    console.error('Error in suggestTags:', error);
+    return [];
   }
-
-  return Array.from(suggestedTags);
 }
 
 function generateInsight(tags) {
   if (!tags || tags.length === 0) return "No insight available.";
-  const insights = tags.map(tag => insightMap[tag] || `Skilled in ${tag}.`).filter(Boolean);
+  const insights = tags.map(tag => insightMap[tag] || `Skilled in ${tag.replace('skill_', '')}.`).filter(Boolean);
   return insights.length > 0 ? insights.join(' ') : "Insight based on tags.";
 }
 
@@ -446,6 +443,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await initializeModel(); // Inizializza il modello all'avvio
   displayPlayers();
 });
