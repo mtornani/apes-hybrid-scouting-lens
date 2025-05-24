@@ -1,3 +1,5 @@
+<!-- File: app.js
+   Changes: Implement LLM post-ricerca with T5-small, Replace parsePlayerPost with extractPlayerDataWithLLM, Add fallback and UX, Inject CSE with provided ID -->
 document.addEventListener('DOMContentLoaded', async () => {
   await initializeModel();
 
@@ -14,62 +16,57 @@ document.addEventListener('DOMContentLoaded', async () => {
       tags: ["line-breaking pass", "quick turn", "calm under pressure"],
       source: "scout verified",
       rank: "Tattico",
-      insight: "Un metronomo che orchestra il gioco con passaggi che tagliano le linee come lame."
+      insight: "Un giocatore che combina visione e lucidità: trova linee di passaggio impossibili, un regista che spezza le difese con visione pura. Si gira con agilità sotto pressione, un talento che crea spazi dove non ce ne sono. Gestisce il gioco con lucidità, un faro che guida la squadra nei momenti cruciali."
     },
-    {
-      name: "Sipho Dlamini",
-      country: "South Africa",
-      year: 2009,
-      role: "Winger (Left)",
-      club: "SuperSport United U17",
-      video: "https://twitter.com/africatalents/status/9876543210",
-      context: "1v1 dribble + assist in AFCON U17",
-      tags: ["explosive dribbling", "feint", "final pass"],
-      source: "local journalist",
-      rank: "Elettrico",
-      insight: "Un fulmine che danza sulla fascia, lasciando i difensori a inseguire ombre."
-    },
-    {
-      name: "Thiago Muniz",
-      country: "Brazil",
-      year: 2008,
-      role: "Centre-Back",
-      club: "Atlético Paranaense U17",
-      video: "https://twitter.com/futebolbase/status/1029384756",
-      context: "Clean tackle + vertical carry in Copa RS",
-      tags: ["anticipation", "clean tackle", "progressive carry"],
-      source: "academy coach",
-      rank: "Predatore",
-      insight: "Un muro che legge il gioco in anticipo, costruendo dal basso con la precisione di un architetto."
-    }
   ];
 
-  // Mappa degli insight
+  // Mappa degli insight (bilanciata tra poesia e professionalità)
   const insightMap = {
-    "explosive dribbling": { technical: "Efficace in dribbling nello stretto con accelerazioni rapide.", narrative: "Scivola tra gli spazi con la violenza del ritmo, un lampo che disorienta." },
-    "final pass": { technical: "Precisione elevata nei passaggi decisivi in area avversaria.", narrative: "Serve assist come un pittore che completa il suo capolavoro con un tocco finale." },
-    "calm under pressure": { technical: "Mantienefocus e decisione in situazioni di alta pressione.", narrative: "Un faro nella tempesta, guida la squadra con serenità nei momenti critici." },
-    "clean tackle": { technical: "Interventi difensivi precisi con minimo rischio di fallo.", narrative: "Taglia le azioni avversarie con interventi chirurgici, un maestro del timing." },
-    "anticipation": { technical: "Ottima lettura del gioco con posizionamento anticipato.", narrative: "Legge il campo come un veggente, sempre un passo avanti agli altri." },
-    "progressive carry": { technical: "Capace di avanzare il pallone con controllo in spazi ristretti.", narrative: "Porta il gioco in avanti come un cavaliere in carica, aprendo varchi decisivi." },
-    "quick turn": { technical: "Eccellente agilità nei cambi di direzione sotto pressione.", narrative: "Gira su se stesso come una trottola, lasciando i difensori nel vuoto." },
-    "line-breaking pass": { technical: "Passaggi verticali efficaci per superare le linee difensive.", narrative: "Lancia frecce nella notte, squarciando le difese con visione pura." },
-    "feint": { technical: "Abile nell’usare finte per superare il diretto avversario.", narrative: "Inganna con finte che sembrano magia, un illusionista del pallone." }
-    // Aggiungi altri tag se necessario
+    "explosive dribbling": { technical: "Efficace in dribbling nello stretto con accelerazioni rapide.", narrative: "Supera gli avversari con un ritmo travolgente, un’ala che illumina il campo con la sua energia." },
+    "final pass": { technical: "Precisione elevata nei passaggi decisivi in area avversaria.", narrative: "Conclude l’azione con un passaggio decisivo, un artista che dipinge l’ultimo tocco per il gol." },
+    "calm under pressure": { technical: "Mantiene focus e decisione in situazioni di alta pressione.", narrative: "Gestisce il gioco con lucidità, un faro che guida la squadra nei momenti cruciali." },
+    "clean tackle": { technical: "Interventi difensivi precisi con minimo rischio di fallo.", narrative: "Interviene con precisione chirurgica, un difensore che domina senza sbavature." },
+    "anticipation": { technical: "Ottima lettura del gioco con posizionamento anticipato.", narrative: "Legge il gioco in anticipo, un’intelligenza tattica che anticipa ogni mossa avversaria." },
+    "progressive carry": { technical: "Capace di avanzare il pallone con controllo in spazi ristretti.", narrative: "Avanza con controllo e visione, un motore che spinge la squadra verso l’attacco." },
+    "quick turn": { technical: "Eccellente agilità nei cambi di direzione sotto pressione.", narrative: "Si gira con agilità sotto pressione, un talento che crea spazi dove non ce ne sono." },
+    "line-breaking pass": { technical: "Passaggi verticali efficaci per superare le linee difensive.", narrative: "Trova linee di passaggio impossibili, un regista che spezza le difese con visione pura." },
+    "feint": { technical: "Abile nell’usare finte per superare il diretto avversario.", narrative: "Inganna con movimenti eleganti, un dribbling che lascia i difensori fuori posizione." }
   };
 
-  // Inizializza il modello LLM
+  let pipelineLLM = null;
+
+  // Inizializza il modello LLM (T5-small con WASM)
   async function initializeModel() {
     if (!window['@xenova/transformers']) return;
-    if (!model) {
-      try {
-        const { AutoTokenizer, AutoModelForTokenClassification } = window['@xenova/transformers'];
-        tokenizer = await AutoTokenizer.from_pretrained('distilbert-base-uncased');
-        model = await AutoModelForTokenClassification.from_pretrained('distilbert-base-uncased');
-        console.log('Model initialized at', new Date().toLocaleTimeString());
-      } catch (error) {
-        console.error('Error initializing model:', error);
-      }
+    try {
+      const { pipeline } = window['@xenova/transformers'];
+      pipelineLLM = await pipeline('text2text-generation', 't5-small', { quantized: false });
+    } catch (error) {
+      console.error('Error initializing LLM:', error);
+    }
+  }
+
+  // Estrai dati giocatore con LLM o fallback euristico
+  async function extractPlayerDataWithLLM(text) {
+    if (!pipelineLLM) return parsePlayerPost(text); // Fallback se LLM non pronto
+    try {
+      const prompt = `Estrai i seguenti campi da questo testo: name, country, year, role, tags, insight. Testo: ${text}`;
+      const result = await pipelineLLM(prompt, { max_length: 100 });
+      const output = result[0].generated_text;
+      // Parsa il risultato JSON-like (semplificato)
+      const data = output.match(/\{.*\}/s)?.[0] || '{}';
+      const parsed = JSON.parse(data);
+      return {
+        name: parsed.name || 'Unknown',
+        country: parsed.country || 'Unknown',
+        year: parsed.year ? parseInt(parsed.year) : new Date().getFullYear() - 17,
+        role: parsed.role || 'Unknown',
+        tags: parsed.tags ? parsed.tags.split(',').map(t => t.trim()) : [],
+        insight: parsed.insight || generateInsight(parsed.tags || [])
+      };
+    } catch (error) {
+      console.warn('LLM failed, using fallback:', error);
+      return parsePlayerPost(text);
     }
   }
 
@@ -105,48 +102,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     return match ? `https://img.youtube.com/vi/${match[1]}/0.jpg` : 'placeholder.png';
   }
 
-  // Parsing report
-  function parseReport(reportText) {
-    const [name, country, year, role] = reportText.split(',').map(part => part.trim());
-    return name && country && year && role ? {
-      name, country, year: parseInt(year), role,
-      club: 'Unknown', video: '', context: '', tags: [], source: 'Scout (parsed)', rank: 'Tattico', insight: ''
-    } : null;
-  }
-
   // Display giocatori
   function displayPlayers(countryFilter = '', roleFilter = '', rankFilter = '') {
     const players = loadPlayers();
     const playerList = document.getElementById('player-list');
     playerList.innerHTML = '';
-
     const filteredPlayers = players.filter(player =>
       (!countryFilter || player.country.toLowerCase() === countryFilter.toLowerCase()) &&
       (!roleFilter || player.role.toLowerCase() === roleFilter.toLowerCase()) &&
       (!rankFilter || player.rank.toLowerCase() === rankFilter.toLowerCase())
     );
-
     if (filteredPlayers.length === 0) {
-      playerList.innerHTML = '<li>No players found.</li>';
+      playerList.innerHTML = '<li>Nessun talento trovato.</li>';
     } else {
       filteredPlayers.forEach((player, index) => {
         const li = document.createElement('li');
         li.className = 'player-card';
         li.innerHTML = `
           <h3>${player.name} (${player.country}, ${player.year})</h3>
-          <p><strong>Role:</strong> ${player.role}</p>
-          <p><strong>Club:</strong> ${player.club}</p>
-          ${player.video ? `<p><strong>Video:</strong> <a href="${player.video}" target="_blank">Watch</a></p>` : ''}
-          ${player.context ? `<p><strong>Context:</strong> ${player.context}</p>` : ''}
-          <p><strong>Tags:</strong> ${player.tags.join(', ')}</p>
-          <p><strong>Source:</strong> ${player.source}</p>
+          <p><strong>Ruolo:</strong> ${player.role}</p>
+          <p><strong>Club:</strong> ${player.club || 'N/A'}</p>
+          ${player.video ? `<p><strong>Video:</strong> <a href="${player.video}" target="_blank">Guarda</a></p>` : ''}
+          ${player.context ? `<p><strong>Contesto:</strong> ${player.context}</p>` : ''}
+          <p><strong>Tag:</strong> ${player.tags.join(', ')}</p>
+          <p><strong>Fonte:</strong> ${player.source}</p>
           <p><strong>Rank:</strong> ${player.rank}</p>
           <p><strong>Insight:</strong> ${player.insight}</p>
-          <button class="delete-btn" data-index="${index}">Delete</button>
+          <button class="delete-btn" data-index="${index}">Elimina</button>
         `;
         playerList.appendChild(li);
       });
-
       document.querySelectorAll('.delete-btn').forEach(button =>
         button.addEventListener('click', () => {
           deletePlayer(button.dataset.index);
@@ -156,148 +141,223 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Gestione tag e rank
-  let tags = [];
-  document.querySelectorAll('.tag').forEach(button =>
-    button.addEventListener('click', () => {
-      button.classList.toggle('selected');
-      const tag = button.dataset.tag;
-      if (tags.includes(tag)) tags = tags.filter(t => t !== tag);
-      else tags.push(tag);
-    })
-  );
-
-  let selectedRank = 'Tattico';
-  document.querySelectorAll('.rank-option').forEach(option =>
-    option.addEventListener('click', () => {
-      selectedRank = option.dataset.rank;
-      document.querySelectorAll('.rank-option').forEach(opt =>
-        opt.classList.toggle('selected', opt.dataset.rank === selectedRank)
+  // Funzione per suggerire tag
+  function suggestTags(text) {
+    if (!text) return [];
+    const words = text.toLowerCase().split(/\W+/);
+    const knownTags = Object.keys(insightMap);
+    const suggestedTags = new Set();
+    words.forEach(word => {
+      const matchingTag = knownTags.find(tag => 
+        tag.includes(word) || word.includes(tag) || levenshteinDistance(tag, word) < 2
       );
-    })
-  );
+      if (matchingTag) suggestedTags.add(matchingTag);
+    });
+    return Array.from(suggestedTags).slice(0, 5);
+  }
 
-  // Quick save
-  document.getElementById('quick-save').addEventListener('click', () => {
-    const player = {
-      name: document.getElementById('name').value || 'Unknown',
-      video: document.getElementById('video').value,
-      tags,
-      rank: selectedRank,
-      country: 'Unknown', year: new Date().getFullYear() - 17,
-      role: 'Unknown', club: 'Unknown', context: '', source: 'Scout',
-      insight: tags.map(tag => insightMap[tag]?.narrative || `Abile in ${tag.replace('skill_', '')}.`).join(' ')
-    };
-    savePlayer(player);
-    displayPlayers();
-    document.getElementById('name').value = '';
-    document.getElementById('video').value = '';
-    tags = [];
-    document.querySelectorAll('.tag').forEach(btn => btn.classList.remove('selected'));
-  });
-
-  // Suggerimento tag
-  async function suggestTags(contextText) {
-    if (!contextText || !model || !tokenizer) return fuzzySuggestTags(contextText);
-    try {
-      const inputs = tokenizer(contextText, { max_length: 128, truncation: true, return_tensors: 'array' });
-      const outputs = await model(inputs);
-      const logits = outputs.logits;
-      const predictions = Array.from(logits[0]).map((score, idx) => ({ token: tokenizer.decode([idx]), score }));
-      return predictions
-        .filter(p => p.score > 0.5)
-        .map(p => p.token.toLowerCase())
-        .filter(token => token.length > 3)
-        .map(token => insightMap[token] ? token : `skill_${token}`)
-        .slice(0, 5) || fuzzySuggestTags(contextText);
-    } catch (error) {
-      console.error('Error in suggestTags:', error);
-      return fuzzySuggestTags(contextText);
+  // Funzione per calcolare la distanza di Levenshtein
+  function levenshteinDistance(a, b) {
+    const matrix = Array(b.length + 1).fill().map(() => Array(a.length + 1).fill(0));
+    for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
+    for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+    for (let j = 1; j <= b.length; j++) {
+      for (let i = 1; i <= a.length; i++) {
+        const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,
+          matrix[j - 1][i] + 1,
+          matrix[j - 1][i - 1] + indicator
+        );
+      }
     }
+    return matrix[b.length][a.length];
   }
 
-  function fuzzySuggestTags(contextText) {
-    if (!contextText) return [];
-    return contextText.toLowerCase().split(/\W+/)
-      .filter(word => word.length > 3)
-      .map(word => insightMap[word] ? word : `skill_${word}`)
-      .slice(0, 5);
-  }
-
-  // Generazione insight
+  // Funzione per generare insight (bilanciata per professionalità)
   function generateInsight(tags, style = 'narrative') {
-    if (!tags?.length) return "Nessun insight disponibile.";
-    return tags.map(tag => insightMap[tag]?.[style] || `Abile in ${tag.replace('skill_', '')}.`).join(' ');
+    if (!tags || tags.length === 0) return "Nessun insight disponibile.";
+    const insights = tags.map(tag => {
+      const entry = insightMap[tag] || { 
+        technical: `Abile in ${tag.replace('skill_', '')}.`, 
+        narrative: `Un talento emergente in ${tag.replace('skill_', '')}, con qualità da osservare.` 
+      };
+      return style === 'technical' ? entry.technical : entry.narrative;
+    }).filter(Boolean);
+    const intro = tags.length > 1 ? "Un giocatore che combina " : "Un talento che spicca per ";
+    return intro + insights.join(' ').charAt(0).toLowerCase() + insights.join(' ').slice(1) + ".";
   }
 
-  // Event listener per contesto e tag suggeriti
-  document.getElementById('context').addEventListener('input', async () => {
-    const contextText = document.getElementById('context').value;
-    const suggestedTagsDiv = document.getElementById('suggested-tags');
-    if (contextText) {
-      const suggestedTags = await suggestTags(contextText);
-      suggestedTagsDiv.innerHTML = suggestedTags.map(tag => 
-        `<button class="suggested-tag" data-tag="${tag}">${tag}</button>`
-      ).join(' ') || 'Nessun tag suggerito.';
-      document.querySelectorAll('.suggested-tag').forEach(button => {
-        button.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const tag = button.dataset.tag;
-          const tagsInput = document.getElementById('tags');
-          const currentTags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t);
-          if (!currentTags.includes(tag)) {
-            tagsInput.value = [...currentTags, tag].join(', ');
-          }
-        });
-      });
+  // Funzione fallback per parsing euristico (usata solo se LLM fallisce)
+  function parsePlayerPost(text) {
+    if (!text) return null;
+    const originalText = text;
+    const words = text.toLowerCase().split(/\W+/);
+
+    // Estrazione nome
+    const nameMatch = originalText.match(/[A-Z][a-z]+(?: [A-Z][a-z]+)?/);
+    const name = nameMatch ? nameMatch[0] : 'Unknown';
+
+    // Estrazione paese
+    const countries = ['brazil', 'ecuador', 'south africa', 'argentina', 'spain', 'england', 'france', 'italy', 'germany', 'portugal', 'colombia', 'mexico'];
+    const country = words.find(word => countries.includes(word)) || 'Unknown';
+
+    // Estrazione anno
+    const yearMatch = originalText.match(/\b(200[5-9])\b/);
+    const year = yearMatch ? parseInt(yearMatch[1]) : new Date().getFullYear() - 17;
+
+    // Estrazione ruolo
+    const roles = ['winger', 'midfielder', 'striker', 'defender', 'goalkeeper', 'forward', 'centre-back', 'centre back', 'attacking midfielder', 'defensive midfielder'];
+    const roleMatch = words.find(word => roles.includes(word));
+    const role = roleMatch ? roleMatch.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-') : 'Unknown';
+
+    // Estrazione video
+    const videoMatch = originalText.match(/(https?:\/\/[^\s]+)/);
+    const video = videoMatch ? videoMatch[0] : '';
+
+    // Estrazione contesto
+    const contextMatch = originalText.match(/.{1,100}(?:match|game|tournament|goal|assist|dribbling|copa|championship).{1,100}/i);
+    const context = contextMatch ? contextMatch[0].trim() : '';
+
+    // Suggerimento tag
+    const tags = suggestTags(originalText);
+    const insight = generateInsight(tags);
+
+    return {
+      name,
+      country: country.charAt(0).toUpperCase() + country.slice(1),
+      year,
+      role,
+      tags,
+      insight,
+      context,
+      video,
+      source: 'Manual X Post'
+    };
+  }
+
+  // Barra di ricerca con DuckDuckGo
+  document.getElementById('search-btn').addEventListener('click', async () => {
+    const query = document.getElementById('search-bar').value;
+    const searchResultsDiv = document.getElementById('search-results');
+    if (query) {
+      try {
+        const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1`);
+        const data = await response.json();
+        const results = data.RelatedTopics || [];
+        const filteredResults = results.filter(item => item.Text && item.FirstURL).slice(0, 5);
+        if (filteredResults.length > 0) {
+          searchResultsDiv.innerHTML = filteredResults.map(item => `
+            <div class="search-result">
+              <h4>${item.Text.split(' - ')[0]}</h4>
+              <p>${item.Text}</p>
+              <a href="${item.FirstURL}" target="_blank">Vedi fonte</a>
+              <button class="create-profile-btn" data-text="${item.Text}">Crea Profilo</button>
+            </div>
+          `).join('');
+          document.querySelectorAll('.create-profile-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+              const playerData = await extractPlayerDataWithLLM(button.dataset.text);
+              if (playerData) {
+                document.getElementById('name-full').value = playerData.name;
+                document.getElementById('country').value = playerData.country;
+                document.getElementById('year').value = playerData.year;
+                document.getElementById('role').value = playerData.role;
+                document.getElementById('video-full').value = playerData.video;
+                document.getElementById('context').value = playerData.context;
+                document.getElementById('tags').value = playerData.tags.join(', ');
+                document.getElementById('insight').value = playerData.insight;
+                document.getElementById('source').value = 'DuckDuckGo Search';
+              }
+            });
+          });
+        } else {
+          searchResultsDiv.innerHTML = '<p>Nessun risultato trovato. Prova una query diversa.</p>';
+        }
+      } catch (error) {
+        searchResultsDiv.innerHTML = '<p>Errore nella ricerca. Controlla la connessione.</p>';
+      }
     } else {
-      suggestedTagsDiv.innerHTML = '';
+      searchResultsDiv.innerHTML = '<p>Inserisci una query per cercare.</p>';
     }
   });
 
-  // Generazione insight
-  document.getElementById('generate-insight').addEventListener('click', () => {
-    const tagsInput = document.getElementById('tags').value;
-    const tags = tagsInput.split(',').map(tag => tag.trim()).filter(t => t);
-    const insightStyle = document.querySelector('input[name="insight-style"]:checked')?.value || 'narrative';
-    document.getElementById('insight').value = generateInsight(tags, insightStyle);
+  // Analisi del post incollato
+  document.getElementById('analyze-post-btn').addEventListener('click', async () => {
+    const postText = document.getElementById('scouting-post').value;
+    const suggestionsDiv = document.getElementById('scouting-post-suggestions');
+    if (postText) {
+      const playerData = await extractPlayerDataWithLLM(postText);
+      if (playerData) {
+        suggestionsDiv.innerHTML = `
+          <div class="suggestion-card">
+            <h3>Suggerimenti Scout</h3>
+            <p><strong>Nome:</strong> ${playerData.name}</p>
+            <p><strong>Paese:</strong> ${playerData.country}</p>
+            <p><strong>Anno:</strong> ${playerData.year}</p>
+            <p><strong>Ruolo:</strong> ${playerData.role}</p>
+            ${playerData.video ? `<p><strong>Video:</strong> <a href="${playerData.video}" target="_blank">${playerData.video}</a></p>` : ''}
+            ${playerData.context ? `<p><strong>Contesto:</strong> ${playerData.context}</p>` : ''}
+            <p><strong>Tag:</strong> ${playerData.tags.join(', ')}</p>
+            <p><strong>Insight:</strong> ${playerData.insight}</p>
+            <button id="apply-suggestions-btn">Applica al Profilo</button>
+          </div>
+        `;
+        document.getElementById('apply-suggestions-btn').addEventListener('click', () => {
+          document.getElementById('name-full').value = playerData.name;
+          document.getElementById('country').value = playerData.country;
+          document.getElementById('year').value = playerData.year;
+          document.getElementById('role').value = playerData.role;
+          document.getElementById('video-full').value = playerData.video;
+          document.getElementById('context').value = playerData.context;
+          document.getElementById('tags').value = playerData.tags.join(', ');
+          document.getElementById('insight').value = playerData.insight;
+          document.getElementById('source').value = 'Manual X Post';
+        });
+      } else {
+        suggestionsDiv.innerHTML = '<p>Impossibile analizzare il post. Inserisci più dettagli.</p>';
+      }
+    } else {
+      suggestionsDiv.innerHTML = '<p>Incolla un post da X per analizzarlo.</p>';
+    }
   });
 
   // Submit form
   document.getElementById('scout-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const reportText = document.getElementById('report-input')?.value;
-    let player = reportText ? parseReport(reportText) : {
-      name: document.getElementById('name-full').value,
-      country: document.getElementById('country').value,
-      year: parseInt(document.getElementById('year').value),
-      role: document.getElementById('role').value,
-      club: document.getElementById('club').value,
-      video: document.getElementById('video-full').value,
-      context: document.getElementById('context').value,
-      tags: document.getElementById('tags').value.split(',').map(t => t.trim()),
-      source: document.getElementById('source').value,
-      rank: document.getElementById('rank-full').value,
-      insight: document.getElementById('insight').value
+    const player = {
+      name: document.getElementById('name-full').value || 'Unknown',
+      country: document.getElementById('country').value || 'Unknown',
+      year: parseInt(document.getElementById('year').value) || new Date().getFullYear() - 17,
+      role: document.getElementById('role').value || 'Unknown',
+      club: document.getElementById('club').value || 'Unknown',
+      video: document.getElementById('video-full').value || '',
+      context: document.getElementById('context').value || '',
+      tags: document.getElementById('tags').value.split(',').map(t => t.trim()).filter(t => t),
+      source: document.getElementById('source').value || 'Manual Entry',
+      rank: document.getElementById('rank-full').value || 'Tattico',
+      insight: document.getElementById('insight').value || generateInsight(document.getElementById('tags').value.split(',').map(t => t.trim()))
     };
-    if (player) {
-      player.tags = player.tags || [];
-      player.insight = player.insight || generateInsight(player.tags);
-      savePlayer(player);
-      displayPlayers();
-      e.target.reset();
-    } else {
-      alert('Formato report non valido! Usa: Nome, Paese, Anno, Ruolo');
-    }
+    savePlayer(player);
+    displayPlayers(
+      document.getElementById('filter-country').value,
+      document.getElementById('filter-role').value,
+      document.getElementById('filter-rank').value
+    );
+    e.target.reset();
   });
 
-  // Toggle form
-  document.getElementById('toggle-form').addEventListener('click', () => {
-    const quickEntry = document.querySelector('.quick-entry');
-    const fullForm = document.getElementById('scout-form');
-    quickEntry.style.display = quickEntry.style.display === 'none' ? 'flex' : 'none';
-    fullForm.style.display = fullForm.style.display === 'none' ? 'flex' : 'none';
+  // Generazione insight con spinner
+  document.getElementById('generate-insight').addEventListener('click', async () => {
+    const button = document.getElementById('generate-insight');
+    const spinner = button.querySelector('.spinner');
+    spinner.style.display = 'inline';
+    const tagsInput = document.getElementById('tags').value;
+    const tags = tagsInput.split(',').map(tag => tag.trim()).filter(t => t);
+    const insightStyle = document.querySelector('input[name="insight-style"]:checked')?.value || 'narrative';
+    const insight = await generateInsight(tags, insightStyle); // Simuliamo un delay per lo spinner
+    document.getElementById('insight').value = insight;
+    spinner.style.display = 'none';
   });
 
   // Filtri
@@ -315,7 +375,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('load-demo').addEventListener('click', () => {
     localStorage.setItem('players', JSON.stringify(initialPlayers));
     displayPlayers();
-    alert('Radar demo caricato con successo!');
+    alert('Demo caricata con successo!');
   });
 
   // Export
@@ -324,7 +384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const markdown = players.map(p => `
 ### ${p.name} (${p.country}, ${p.year})
 - **Ruolo**: ${p.role}
-- **Club**: ${p.club}
+- **Club**: ${p.club || 'N/A'}
 ${p.video ? `- **Video**: [Guarda](${p.video})` : ''}
 ${p.context ? `- **Contesto**: ${p.context}` : ''}
 - **Tag**: ${p.tags.join(', ')}
@@ -336,10 +396,43 @@ ${p.context ? `- **Contesto**: ${p.context}` : ''}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'apes_players.md';
+    a.download = 'apes_talents.md';
     a.click();
     URL.revokeObjectURL(url);
   });
+
+  // Overlay per CSE_ID
+  const cseOverlay = document.getElementById('cse-overlay');
+  const cseId = localStorage.getItem('cseId') || 'c12f53951c8884cfd'; // Usa il tuo CSE_ID come default
+  if (!localStorage.getItem('cseId')) {
+    cseOverlay.style.display = 'block';
+    document.getElementById('cse-id-input').value = cseId;
+  } else {
+    injectCSE(cseId);
+  }
+
+  document.getElementById('save-cse-id').addEventListener('click', () => {
+    const cseIdInput = document.getElementById('cse-id-input').value;
+    if (cseIdInput) {
+      localStorage.setItem('cseId', cseIdInput);
+      injectCSE(cseIdInput);
+      cseOverlay.style.display = 'none';
+    }
+  });
+
+  document.getElementById('cancel-cse-id').addEventListener('click', () => {
+    localStorage.setItem('cseId', cseId); // Usa il default se annullato
+    injectCSE(cseId);
+    cseOverlay.style.display = 'none';
+  });
+
+  function injectCSE(cseId) {
+    const script = document.createElement('script');
+    script.src = `https://cse.google.com/cse.js?cx=${cseId}`;
+    document.body.appendChild(script);
+    const gcseDiv = document.querySelector('.gcse-search');
+    if (gcseDiv) gcseDiv.innerHTML = ''; // Pulisci per reinizializzazione
+  }
 
   // Offline support
   window.addEventListener('online', () => document.getElementById('offline-indicator').style.display = 'none');
@@ -353,6 +446,5 @@ ${p.context ? `- **Contesto**: ${p.context}` : ''}
     );
   }
 
-  // Inizializza la visualizzazione
   displayPlayers();
 });
