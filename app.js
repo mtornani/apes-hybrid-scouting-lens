@@ -40,7 +40,7 @@ const initialPlayers = [
   }
 ];
 
-// Mappa di insight basati sui tag (usata anche per mappare tag generati)
+// Mappa di insight basati sui tag
 const insightMap = {
   "explosive dribbling": "Abile nel superare gli avversari con dribbling rapidi.",
   "final pass": "Efficace nel fornire passaggi decisivi.",
@@ -50,7 +50,9 @@ const insightMap = {
   "progressive carry": "Porta il pallone in avanti con sicurezza.",
   "quick turn": "Rapido nei cambi di direzione.",
   "line-breaking pass": "Capace di spezzare le linee con passaggi incisivi.",
-  "feint": "Efficace nell’ingannare gli avversari con finte."
+  "feint": "Efficace nell’ingannare gli avversari con finte.",
+  "playmaker": "Eccellente visione di gioco e distribuzione.",
+  "physical presence": "Dominante grazie alla forza fisica."
 };
 
 // Inizializza il modello LLM
@@ -62,7 +64,7 @@ async function initializeModel() {
       const { AutoTokenizer, AutoModelForTokenClassification } = window['@xenova/transformers'];
       tokenizer = await AutoTokenizer.from_pretrained('distilbert-base-uncased');
       model = await AutoModelForTokenClassification.from_pretrained('distilbert-base-uncased');
-      console.log('Model initialized successfully');
+      console.log('Model initialized successfully at', new Date().toLocaleTimeString());
     } catch (error) {
       console.error('Error initializing model:', error);
     }
@@ -219,7 +221,7 @@ document.getElementById('quick-save').addEventListener('click', () => {
     club: 'Unknown',
     context: '',
     source: 'Scout',
-    insight: tags.map(tag => insightMap[tag] || `Skilled in ${tag}.`).join(' ')
+    insight: tags.map(tag => insightMap[tag] || `Skilled in ${tag.replace('skill_', '')}.`).join(' ')
   };
   const players = loadPlayers();
   if (isDuplicate(player, players)) {
@@ -240,7 +242,10 @@ document.getElementById('quick-save').addEventListener('click', () => {
 
 async function suggestTags(contextText) {
   await initializeModel(); // Assicura che il modello sia pronto
-  if (!contextText || !model || !tokenizer) return [];
+  if (!contextText || !model || !tokenizer) {
+    console.warn('Model or tokenizer not available, falling back to fuzzy matching');
+    return fuzzySuggestTags(contextText);
+  }
 
   try {
     const inputs = tokenizer(contextText, { max_length: 128, truncation: true, return_tensors: 'array' });
@@ -254,10 +259,12 @@ async function suggestTags(contextText) {
       .map(p => p.token.toLowerCase())
       .filter(token => token.length > 3 && !['the', 'and', 'in'].includes(token));
 
+    console.log('Relevant tokens from LLM:', relevantTokens);
+
     // Mappa i token a tag noti o crea tag generici
     const suggestedTags = new Set();
     relevantTokens.forEach(token => {
-      const matchingTag = Object.keys(insightMap).find(tag => tag.includes(token));
+      const matchingTag = Object.keys(insightMap).find(tag => tag.includes(token) || levenshteinDistance(tag, token) < 2);
       if (matchingTag) {
         suggestedTags.add(matchingTag);
       } else if (token in insightMap) {
@@ -267,11 +274,51 @@ async function suggestTags(contextText) {
       }
     });
 
-    return Array.from(suggestedTags).slice(0, 5); // Limita a 5 tag suggeriti
+    const tags = Array.from(suggestedTags).slice(0, 5);
+    console.log('Suggested tags from LLM:', tags);
+    return tags.length > 0 ? tags : fuzzySuggestTags(contextText);
   } catch (error) {
-    console.error('Error in suggestTags:', error);
-    return [];
+    console.error('Error in LLM suggestTags:', error);
+    return fuzzySuggestTags(contextText);
   }
+}
+
+// Funzione di fuzzy matching come fallback
+function fuzzySuggestTags(contextText) {
+  if (!contextText) return [];
+  const words = contextText.toLowerCase().split(/\W+/);
+  const suggestedTags = new Set();
+
+  words.forEach(word => {
+    const matchingTag = Object.keys(insightMap).find(tag => 
+      levenshteinDistance(tag, word) < 2 || tag.includes(word)
+    );
+    if (matchingTag) {
+      suggestedTags.add(matchingTag);
+    } else if (word.length > 3) {
+      suggestedTags.add(`skill_${word}`);
+    }
+  });
+
+  return Array.from(suggestedTags).slice(0, 5);
+}
+
+// Funzione per calcolare la distanza di Levenshtein (fuzzy matching)
+function levenshteinDistance(a, b) {
+  const matrix = Array(b.length + 1).fill().map(() => Array(a.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
+  for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+  for (let j = 1; j <= b.length; j++) {
+    for (let i = 1; i <= a.length; i++) {
+      const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[j][i] = Math.min(
+        matrix[j][i - 1] + 1, // eliminazione
+        matrix[j - 1][i] + 1, // inserzione
+        matrix[j - 1][i - 1] + indicator // sostituzione
+      );
+    }
+  }
+  return matrix[b.length][a.length];
 }
 
 function generateInsight(tags) {
@@ -438,7 +485,7 @@ if (!navigator.onLine) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/apes-hybrid-scouting-lens/sw.js').catch(err => {
-      console.error('Service Worker registration failed:', err);
+      console.error('Service Worker registration failed:', error);
     });
   });
 }
