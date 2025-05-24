@@ -1,5 +1,5 @@
 <!-- File: index.html
-   Changes: Embed Google CSE UI with overlay setup, Load transformers.js for LLM, Inject CSE_ID -->
+   Changes: Replace DuckDuckGo search with Google CSE using provided CSE_ID -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,11 +20,9 @@
     <section class="scouting-section">
       <h2>Scouting Semi-Guidato</h2>
       <div class="search-bar">
-        <label for="search-bar">Cerca Talenti (es. "U17 Brazil dribbling"):</label>
-        <input type="text" id="search-bar" placeholder="Cerca con DuckDuckGo...">
-        <button type="button" id="search-btn">Cerca</button>
-        <div id="search-results"></div>
+        <label>Cerca Talenti (es. "U17 Brazil dribbling"):</label>
         <div class="gcse-search"></div>
+        <div id="search-results"></div>
       </div>
 
       <div class="post-analysis">
@@ -124,13 +122,13 @@
     <div class="overlay-content">
       <h3>Configura Google CSE</h3>
       <p>Inserisci il tuo CSE_ID per attivare la ricerca avanzata:</p>
-      <input type="text" id="cse-id-input" placeholder="es. 0123456789abcdef" value="c12f53951c8884cfd">
+      <input type="text" id="cse-id-input" placeholder="es. 0123456789abcdef">
       <button id="save-cse-id">Salva</button>
       <button id="cancel-cse-id">Annulla</button>
     </div>
   </div>
 
-  <!-- Script per transformers.js e Google CSE -->
+  <!-- Script per transformers.js -->
   <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0"></script>
   <script src="app.js"></script>
 </body>
