@@ -40,6 +40,28 @@ const initialPlayers = [
   }
 ];
 
+// Mappa di tag predefiniti per il suggerimento
+const tagMap = {
+  "dribbling": ["explosive dribbling", "feint"],
+  "assist": ["final pass", "line-breaking pass"],
+  "calm": ["calm under pressure"],
+  "tackle": ["clean tackle", "anticipation"],
+  "carry": ["progressive carry"],
+  "turn": ["quick turn"]
+};
+
+// Mappa di insight basati sui tag
+const insightMap = {
+  "explosive dribbling": "Abile nel superare gli avversari con dribbling rapidi.",
+  "final pass": "Efficace nel fornire passaggi decisivi.",
+  "calm under pressure": "Mantiene la calma sotto pressione.",
+  "clean tackle": "Preciso e pulito nei contrasti.",
+  "anticipation": "Grande capacità di lettura del gioco.",
+  "progressive carry": "Porta il pallone in avanti con sicurezza.",
+  "quick turn": "Rapido nei cambi di direzione.",
+  "line-breaking pass": "Capace di spezzare le linee con passaggi incisivi."
+};
+
 function loadPlayers() {
   return JSON.parse(localStorage.getItem('players')) || [];
 }
@@ -171,7 +193,7 @@ document.getElementById('quick-save').addEventListener('click', () => {
     club: 'Unknown',
     context: '',
     source: 'Scout',
-    insight: tags.join(', ')
+    insight: tags.map(tag => insightMap[tag] || '').join(' ')
   };
   const players = loadPlayers();
   if (isDuplicate(player, players)) {
@@ -190,10 +212,60 @@ document.getElementById('quick-save').addEventListener('click', () => {
   document.querySelectorAll('.tag').forEach(btn => btn.classList.remove('selected'));
 });
 
+async function suggestTags(contextText) {
+  const words = contextText.toLowerCase().split(/\W+/);
+  let suggestedTags = new Set();
+  
+  words.forEach(word => {
+    if (tagMap[word]) {
+      tagMap[word].forEach(tag => suggestedTags.add(tag));
+    }
+  });
+
+  return Array.from(suggestedTags);
+}
+
+function generateInsight(tags) {
+  if (!tags || tags.length === 0) return "No insight available.";
+  return tags.map(tag => insightMap[tag] || '').filter(Boolean).join(' ') || "Insight based on tags.";
+}
+
+document.getElementById('context').addEventListener('input', async () => {
+  const contextText = document.getElementById('context').value;
+  if (contextText) {
+    const suggestedTags = await suggestTags(contextText);
+    const suggestedTagsDiv = document.getElementById('suggested-tags');
+    suggestedTagsDiv.innerHTML = suggestedTags.length > 0 
+      ? suggestedTags.map(tag => `<button class="suggested-tag" data-tag="${tag}">${tag}</button>`).join(' ')
+      : 'No tags suggested.';
+    
+    document.querySelectorAll('.suggested-tag').forEach(button => {
+      button.addEventListener('click', () => {
+        const tag = button.dataset.tag;
+        const tagsInput = document.getElementById('tags');
+        const currentTags = tagsInput.value ? tagsInput.value.split(',').map(t => t.trim()) : [];
+        if (!currentTags.includes(tag)) {
+          currentTags.push(tag);
+          tagsInput.value = currentTags.join(', ');
+        }
+      });
+    });
+  } else {
+    document.getElementById('suggested-tags').innerHTML = '';
+  }
+});
+
+document.getElementById('generate-insight').addEventListener('click', () => {
+  const tagsInput = document.getElementById('tags').value;
+  const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()) : [];
+  const insight = generateInsight(tags);
+  document.getElementById('insight').value = insight;
+});
+
 document.getElementById('scout-form').addEventListener('submit', e => {
   e.preventDefault();
   let player;
-  const reportText = document.getElementById('report-input').value;
+  const reportText = document.getElementById('report-input') ? document.getElementById('report-input').value : '';
   if (reportText) {
     player = parseReport(reportText);
     if (!player) {
