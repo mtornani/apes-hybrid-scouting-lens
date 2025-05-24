@@ -1,119 +1,136 @@
+<!-- File: index.html
+   Changes: Embed Google CSE UI with overlay setup, Load transformers.js for LLM -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#28a745">
-  <link rel="manifest" href="/apes-hybrid-scouting-lens/manifest.json">
-  <link rel="icon" type="image/png" href="/apes-hybrid-scouting-lens/icon.png">
   <title>APES - Hybrid Scouting Lens</title>
-  <link rel="stylesheet" href="/apes-hybrid-scouting-lens/style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.touchswipe/1.6.19/jquery.touchSwipe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
   <div class="container">
     <header>
       <h1>APES</h1>
-      <p>Hybrid Scouting Lens for U17 Football Talent</p>
-      <div id="offline-indicator" style="display: none; color: red;">Offline Mode</div>
+      <p>Hybrid Scouting Lens</p>
+      <div id="offline-indicator" style="display: none; color: #e74c3c;">Offline Mode</div>
     </header>
-    
-    <section id="player-form">
-      <h2>Add Player</h2>
-      <form id="scout-form">
-        <label>Name:</label>
-        <input type="text" id="name-full" placeholder="Player Name" required>
-        <label>Country:</label>
-        <input type="text" id="country" placeholder="Country" required>
-        <label>Year of Birth:</label>
-        <input type="number" id="year" placeholder="Birth Year" required>
-        <label>Role:</label>
-        <input type="text" id="role" placeholder="Role" required>
-        <label>Club:</label>
-        <input type="text" id="club" placeholder="Club" required>
-        <label>Video URL:</label>
-        <input type="url" id="video-full" placeholder="Video URL (YouTube/X)">
-        <label>Context Description:</label>
-        <input type="text" id="context" placeholder="Context (e.g., match highlight)">
-        <label>Gesture Tags:</label>
-        <input type="text" id="tags" placeholder="Tags (comma-separated)">
-        <label>Suggested Tags:</label>
-        <div id="suggested-tags"></div>
-        <label>Source Type:</label>
-        <input type="text" id="source" placeholder="Source (e.g., scout, journalist)">
-        <label>APES Rank:</label>
-        <select id="rank-full" required>
-          <option value="" disabled selected>Select Rank</option>
-          <option value="Tattico">Tattico</option>
-          <option value="Elettrico">Elettrico</option>
-          <option value="Predatore">Predatore</option>
-        </select>
-        <label>Insight Style:</label>
-        <div>
-          <label><input type="radio" name="insight-style" value="technical" checked> 🧠 Tecnico</label>
-          <label><input type="radio" name="insight-style" value="narrative"> 🎭 Narrativo</label>
-        </div>
-        <label>Short Insight:</label>
-        <textarea id="insight" placeholder="Scouting Insight" rows="4"></textarea>
-        <button type="button" id="generate-insight">Generate Insight</button>
-        <button type="submit">Add Player</button>
-      </form>
-      <h2>Quick Add Player</h2>
-      <div class="quick-entry">
-        <input type="text" id="name" placeholder="Player Name" required>
-        <input type="url" id="video" placeholder="Video URL (YouTube/X)">
-        <div class="tag-grid">
-          <button class="tag" data-tag="explosive dribbling">Explosive Dribbling</button>
-          <button class="tag" data-tag="line-breaking pass">Line-Breaking Pass</button>
-          <button class="tag" data-tag="calm under pressure">Calm Under Pressure</button>
-          <button class="tag" data-tag="quick turn">Quick Turn</button>
-          <button class="tag" data-tag="anticipation">Anticipation</button>
-          <button class="tag" data-tag="clean tackle">Clean Tackle</button>
-        </div>
-        <div class="swipe-rank">
-          <span>Choose Rank: </span>
-          <span class="rank-option" data-rank="Tattico">Tattico</span>
-          <span class="rank-option" data-rank="Elettrico">Elettrico</span>
-          <span class="rank-option" data-rank="Predatore">Predatore</span>
-        </div>
-        <button id="quick-save">Save Quick Player</button>
-        <button id="toggle-form">Use Full Form</button>
+
+    <section class="scouting-section">
+      <h2>Scouting Semi-Guidato</h2>
+      <div class="search-bar">
+        <label for="search-bar">Cerca Talenti (es. "U17 Brazil dribbling"):</label>
+        <input type="text" id="search-bar" placeholder="Cerca con DuckDuckGo...">
+        <button type="button" id="search-btn">Cerca</button>
+        <div id="search-results"></div>
       </div>
-    </section>
-    
-    <section id="radar-list">
-      <h2>Radar View</h2>
-      <div class="controls">
-        <label>Filter by Country:</label>
-        <select id="filter-country">
-          <option value="">All</option>
-          <option value="Ecuador">Ecuador</option>
-          <option value="South Africa">South Africa</option>
-          <option value="Brazil">Brazil</option>
-        </select>
-        <label>Filter by Role:</label>
-        <select id="filter-role">
-          <option value="">All</option>
-          <option value="Central Midfielder">Central Midfielder</option>
-          <option value="Winger (Left)">Winger (Left)</option>
-          <option value="Centre-Back">Centre-Back</option>
-        </select>
-        <label>Filter by Rank:</label>
-        <select id="filter-rank">
-          <option value="">All</option>
+
+      <div class="post-analysis">
+        <label for="scouting-post">Incolla Post da X:</label>
+        <textarea id="scouting-post" rows="5" placeholder="Incolla un post (es. 'Thiago Muniz, Brazil, 2008, Centre-Back. Clean tackle in Copa RS.')"></textarea>
+        <button type="button" id="analyze-post-btn">Analizza Post</button>
+        <div id="scouting-post-suggestions"></div>
+      </div>
+
+      <form id="scout-form">
+        <label for="name-full">Nome:</label>
+        <input type="text" id="name-full" placeholder="Nome del giocatore">
+
+        <label for="country">Paese:</label>
+        <input type="text" id="country" placeholder="Paese">
+
+        <label for="year">Anno di Nascita:</label>
+        <input type="number" id="year" placeholder="es. 2008">
+
+        <label for="role">Ruolo:</label>
+        <input type="text" id="role" placeholder="es. Centre-Back">
+
+        <label for="video-full">Video URL:</label>
+        <input type="text" id="video-full" placeholder="es. https://twitter.com/...">
+
+        <label for="context">Contesto:</label>
+        <textarea id="context" placeholder="es. Clean tackle in Copa RS"></textarea>
+
+        <label for="tags">Tag:</label>
+        <input type="text" id="tags" placeholder="es. clean tackle, progressive carry">
+
+        <label for="source">Fonte:</label>
+        <input type="text" id="source" placeholder="es. Manual X Post">
+
+        <label for="rank-full">Rank APES:</label>
+        <select id="rank-full">
           <option value="Tattico">Tattico</option>
           <option value="Elettrico">Elettrico</option>
           <option value="Predatore">Predatore</option>
         </select>
-        <button id="load-demo">Load Demo Radar</button>
-        <button id="export-btn">Export Radar as Markdown</button>
+
+        <label>Stile Insight:</label>
+        <div class="insight-style-label">
+          <input type="radio" name="insight-style" value="technical"> 🧠 Tecnico
+        </div>
+        <div class="insight-style-label">
+          <input type="radio" name="insight-style" value="narrative" checked> 🎭 Narrativo
+        </div>
+
+        <label for="insight">Insight:</label>
+        <textarea id="insight" placeholder="Insight generato apparirà qui"></textarea>
+
+        <button type="button" id="generate-insight">Genera Insight <span class="spinner" style="display: none;">⏳</span></button>
+        <button type="submit">Aggiungi Giocatore</button>
+      </form>
+    </section>
+
+    <section class="radar-section">
+      <h2>Radar dei Talenti</h2>
+      <div class="controls">
+        <div>
+          <label for="filter-country">Filtra per Paese:</label>
+          <select id="filter-country">
+            <option value="">Tutti</option>
+            <option value="Brazil">Brasile</option>
+            <option value="Ecuador">Ecuador</option>
+            <option value="South Africa">Sudafrica</option>
+          </select>
+        </div>
+        <div>
+          <label for="filter-role">Filtra per Ruolo:</label>
+          <select id="filter-role">
+            <option value="">Tutti</option>
+            <option value="Centre-Back">Centre-Back</option>
+            <option value="Winger">Winger</option>
+            <option value="Midfielder">Midfielder</option>
+          </select>
+        </div>
+        <div>
+          <label for="filter-rank">Filtra per Rank:</label>
+          <select id="filter-rank">
+            <option value="">Tutti</option>
+            <option value="Tattico">Tattico</option>
+            <option value="Elettrico">Elettrico</option>
+            <option value="Predatore">Predatore</option>
+          </select>
+        </div>
+        <button id="load-demo">Carica Demo</button>
+        <button id="export-btn">Esporta in Markdown</button>
       </div>
       <ul id="player-list"></ul>
     </section>
   </div>
-  <script src="/apes-hybrid-scouting-lens/app.js"></script>
-<!-- Force rebuild: 2025-05-24 07:30 EDT -->
+
+  <!-- Overlay per CSE_ID -->
+  <div id="cse-overlay" class="overlay" style="display: none;">
+    <div class="overlay-content">
+      <h3>Configura Google CSE</h3>
+      <p>Inserisci il tuo CSE_ID per attivare la ricerca avanzata:</p>
+      <input type="text" id="cse-id-input" placeholder="es. 0123456789abcdef">
+      <button id="save-cse-id">Salva</button>
+      <button id="cancel-cse-id">Annulla</button>
+    </div>
+  </div>
+
+  <!-- Script per transformers.js e Google CSE -->
+  <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0"></script>
+  <script src="app.js"></script>
 </body>
 </html>
