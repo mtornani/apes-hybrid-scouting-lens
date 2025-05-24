@@ -10,7 +10,7 @@ const initialPlayers = [
     tags: ["line-breaking pass", "quick turn", "calm under pressure"],
     source: "scout verified",
     rank: "Tattico",
-    insight: "Calm under pressure and vertical in thought."
+    insight: "Un metronomo che orchestra il gioco con passaggi che tagliano le linee come lame."
   },
   {
     name: "Sipho Dlamini",
@@ -23,7 +23,7 @@ const initialPlayers = [
     tags: ["explosive dribbling", "feint", "final pass"],
     source: "local journalist",
     rank: "Elettrico",
-    insight: "Raw, instinctive, and devastating in short space."
+    insight: "Un fulmine che danza sulla fascia, lasciando i difensori a inseguire ombre."
   },
   {
     name: "Thiago Muniz",
@@ -36,26 +36,79 @@ const initialPlayers = [
     tags: ["anticipation", "clean tackle", "progressive carry"],
     source: "academy coach",
     rank: "Predatore",
-    insight: "Anticipates, disarms, and builds with quarterback instincts."
+    insight: "Un muro che legge il gioco in anticipo, costruendo dal basso con la precisione di un architetto."
   }
 ];
 
-// Mappa di insight basati sui tag
+// Mappa di insight basati sui tag, con versioni tecnica e narrativa
 const insightMap = {
-  "explosive dribbling": "Abile nel superare gli avversari con dribbling rapidi.",
-  "final pass": "Efficace nel fornire passaggi decisivi.",
-  "calm under pressure": "Mantiene la calma sotto pressione.",
-  "clean tackle": "Preciso e pulito nei contrasti.",
-  "anticipation": "Grande capacità di lettura del gioco.",
-  "progressive carry": "Porta il pallone in avanti con sicurezza.",
-  "quick turn": "Rapido nei cambi di direzione.",
-  "line-breaking pass": "Capace di spezzare le linee con passaggi incisivi.",
-  "feint": "Efficace nell’ingannare gli avversari con finte.",
-  "playmaker": "Eccellente visione di gioco e distribuzione.",
-  "physical presence": "Dominante grazie alla forza fisica."
+  "explosive dribbling": {
+    technical: "Efficace in dribbling nello stretto con accelerazioni rapide.",
+    narrative: "Scivola tra gli spazi con la violenza del ritmo, un lampo che disorienta."
+  },
+  "final pass": {
+    technical: "Precisione elevata nei passaggi decisivi in area avversaria.",
+    narrative: "Serve assist come un pittore che completa il suo capolavoro con un tocco finale."
+  },
+  "calm under pressure": {
+    technical: "Mantienefocus e decisione in situazioni di alta pressione.",
+    narrative: "Un faro nella tempesta, guida la squadra con serenità nei momenti critici."
+  },
+  "clean tackle": {
+    technical: "Interventi difensivi precisi con minimo rischio di fallo.",
+    narrative: "Taglia le azioni avversarie con interventi chirurgici, un maestro del timing."
+  },
+  "anticipation": {
+    technical: "Ottima lettura del gioco con posizionamento anticipato.",
+    narrative: "Legge il campo come un veggente, sempre un passo avanti agli altri."
+  },
+  "progressive carry": {
+    technical: "Capace di avanzare il pallone con controllo in spazi ristretti.",
+    narrative: "Porta il gioco in avanti come un cavaliere in carica, aprendo varchi decisivi."
+  },
+  "quick turn": {
+    technical: "Eccellente agilità nei cambi di direzione sotto pressione.",
+    narrative: "Gira su se stesso come una trottola, lasciando i difensori nel vuoto."
+  },
+  "line-breaking pass": {
+    technical: "Passaggi verticali efficaci per superare le linee difensive.",
+    narrative: "Lancia frecce nella notte, squarciando le difese con visione pura."
+  },
+  "feint": {
+    technical: "Abile nell’usare finte per superare il diretto avversario.",
+    narrative: "Inganna con finte che sembrano magia, un illusionista del pallone."
+  },
+  "playmaker": {
+    technical: "Eccellente visione e distribuzione del gioco in fase offensiva.",
+    narrative: "Un regista che muove i pedoni come su una scacchiera, vedendo oltre l’orizzonte."
+  },
+  "physical presence": {
+    technical: "Dominante nei duelli fisici grazie a forza e stazza.",
+    narrative: "Un titano che domina il campo con la forza di un uragano."
+  },
+  "deadly bomber": {
+    technical: "Alta capacità realizzativa negli ultimi 16 metri.",
+    narrative: "Un cobra in agguato, letale negli ultimi metri con fiuto per il gol."
+  },
+  "vision": {
+    technical: "Ottima percezione del campo e capacità di lettura anticipata.",
+    narrative: "Vede ciò che altri non immaginano, un secondo prima che accada."
+  },
+  "skill_dribbling": {
+    technical: "Buona tecnica nel controllo e conduzione del pallone.",
+    narrative: "Un giocoliere che danza con il pallone tra i difensori."
+  },
+  "skill_strength": {
+    technical: "Utilizzo efficace della forza fisica in situazioni di contrasto.",
+    narrative: "Un colosso che apre varchi con la potenza di un ariete."
+  },
+  "skill_strenght": {
+    technical: "Utilizzo efficace della forza fisica in situazioni di contrasto.",
+    narrative: "Un colosso che apre varchi con la potenza di un ariete."
+  }
 };
 
-// Inizializza il modello LLM
+// Inizializza il modello LLM (per i tag, non per gli insight al momento)
 let tokenizer, model;
 
 async function initializeModel() {
@@ -221,11 +274,11 @@ document.getElementById('quick-save').addEventListener('click', () => {
     club: 'Unknown',
     context: '',
     source: 'Scout',
-    insight: tags.map(tag => insightMap[tag] || `Skilled in ${tag.replace('skill_', '')}.`).join(' ')
+    insight: tags.map(tag => insightMap[tag] || `Abile in ${tag.replace('skill_', '')}.`).join(' ')
   };
   const players = loadPlayers();
   if (isDuplicate(player, players)) {
-    alert('Possible duplicate detected! This player may already exist.');
+    alert('Possibile duplicato rilevato! Questo giocatore potrebbe già esistere.');
   } else {
     savePlayer(player);
   }
@@ -241,7 +294,7 @@ document.getElementById('quick-save').addEventListener('click', () => {
 });
 
 async function suggestTags(contextText) {
-  await initializeModel(); // Assicura che il modello sia pronto
+  await initializeModel();
   if (!contextText || !model || !tokenizer) {
     console.warn('Model or tokenizer not available, falling back to fuzzy matching');
     return fuzzySuggestTags(contextText);
@@ -253,7 +306,6 @@ async function suggestTags(contextText) {
     const logits = outputs.logits;
     const predictions = Array.from(logits[0]).map((score, idx) => ({ token: tokenizer.decode([idx]), score }));
 
-    // Filtra i token più rilevanti (es. score > 0.5)
     const relevantTokens = predictions
       .filter(p => p.score > 0.5)
       .map(p => p.token.toLowerCase())
@@ -261,7 +313,6 @@ async function suggestTags(contextText) {
 
     console.log('Relevant tokens from LLM:', relevantTokens);
 
-    // Mappa i token a tag noti o crea tag generici
     const suggestedTags = new Set();
     relevantTokens.forEach(token => {
       const matchingTag = Object.keys(insightMap).find(tag => tag.includes(token) || levenshteinDistance(tag, token) < 2);
@@ -283,7 +334,6 @@ async function suggestTags(contextText) {
   }
 }
 
-// Funzione di fuzzy matching come fallback
 function fuzzySuggestTags(contextText) {
   if (!contextText) return [];
   const words = contextText.toLowerCase().split(/\W+/);
@@ -303,7 +353,6 @@ function fuzzySuggestTags(contextText) {
   return Array.from(suggestedTags).slice(0, 5);
 }
 
-// Funzione per calcolare la distanza di Levenshtein (fuzzy matching)
 function levenshteinDistance(a, b) {
   const matrix = Array(b.length + 1).fill().map(() => Array(a.length + 1).fill(0));
   for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
@@ -312,19 +361,22 @@ function levenshteinDistance(a, b) {
     for (let i = 1; i <= a.length; i++) {
       const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
       matrix[j][i] = Math.min(
-        matrix[j][i - 1] + 1, // eliminazione
-        matrix[j - 1][i] + 1, // inserzione
-        matrix[j - 1][i - 1] + indicator // sostituzione
+        matrix[j][i - 1] + 1,
+        matrix[j - 1][i] + 1,
+        matrix[j - 1][i - 1] + indicator
       );
     }
   }
   return matrix[b.length][a.length];
 }
 
-function generateInsight(tags) {
-  if (!tags || tags.length === 0) return "No insight available.";
-  const insights = tags.map(tag => insightMap[tag] || `Skilled in ${tag.replace('skill_', '')}.`).filter(Boolean);
-  return insights.length > 0 ? insights.join(' ') : "Insight based on tags.";
+function generateInsight(tags, style = 'narrative') {
+  if (!tags || tags.length === 0) return "Nessun insight disponibile.";
+  const insights = tags.map(tag => {
+    const entry = insightMap[tag] || { technical: `Abile in ${tag.replace('skill_', '')}.`, narrative: `Abile in ${tag.replace('skill_', '')}, un talento da affinare.` };
+    return style === 'technical' ? entry.technical : entry.narrative;
+  }).filter(Boolean);
+  return insights.length > 0 ? insights.join(' ') : "Insight basato sui tag.";
 }
 
 document.getElementById('context').addEventListener('input', async () => {
@@ -334,7 +386,7 @@ document.getElementById('context').addEventListener('input', async () => {
     const suggestedTagsDiv = document.getElementById('suggested-tags');
     suggestedTagsDiv.innerHTML = suggestedTags.length > 0 
       ? suggestedTags.map(tag => `<button class="suggested-tag" data-tag="${tag}">${tag}</button>`).join(' ')
-      : 'No tags suggested.';
+      : 'Nessun tag suggerito.';
     
     document.querySelectorAll('.suggested-tag').forEach(button => {
       button.addEventListener('click', () => {
@@ -358,7 +410,8 @@ document.getElementById('generate-insight').addEventListener('click', () => {
   console.log('Tags input:', tagsInput);
   const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()) : [];
   console.log('Parsed tags:', tags);
-  const insight = generateInsight(tags);
+  const insightStyle = document.querySelector('input[name="insight-style"]:checked')?.value || 'narrative';
+  const insight = generateInsight(tags, insightStyle);
   console.log('Generated insight:', insight);
   document.getElementById('insight').value = insight;
 });
@@ -370,7 +423,7 @@ document.getElementById('scout-form').addEventListener('submit', e => {
   if (reportText) {
     player = parseReport(reportText);
     if (!player) {
-      alert('Invalid report format! Use: Name, Country, Year, Role');
+      alert('Formato report non valido! Usa: Nome, Paese, Anno, Ruolo');
       return;
     }
     player.video = document.getElementById('video-full').value;
@@ -395,7 +448,7 @@ document.getElementById('scout-form').addEventListener('submit', e => {
   }
   const players = loadPlayers();
   if (isDuplicate(player, players)) {
-    alert('Possible duplicate detected! This player may already exist.');
+    alert('Possibile duplicato rilevato! Questo giocatore potrebbe già esistere.');
   } else {
     savePlayer(player);
   }
@@ -445,19 +498,19 @@ document.getElementById('load-demo').addEventListener('click', () => {
     document.getElementById('filter-role').value,
     document.getElementById('filter-rank').value
   );
-  alert('Demo radar loaded successfully!');
+  alert('Radar demo caricato con successo!');
 });
 
 document.getElementById('export-btn').addEventListener('click', () => {
   const players = loadPlayers();
   const markdown = players.map(p => `
 ### ${p.name} (${p.country}, ${p.year})
-- **Role**: ${p.role}
+- **Ruolo**: ${p.role}
 - **Club**: ${p.club}
-${p.video ? `- **Video**: [Watch](${p.video})` : ''}
-${p.context ? `- **Context**: ${p.context}` : ''}
-- **Tags**: ${p.tags.join(', ')}
-- **Source**: ${p.source}
+${p.video ? `- **Video**: [Guarda](${p.video})` : ''}
+${p.context ? `- **Contesto**: ${p.context}` : ''}
+- **Tag**: ${p.tags.join(', ')}
+- **Fonte**: ${p.source}
 - **Rank**: ${p.rank}
 - **Insight**: ${p.insight}
   `).join('\n');
@@ -485,12 +538,12 @@ if (!navigator.onLine) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/apes-hybrid-scouting-lens/sw.js').catch(err => {
-      console.error('Service Worker registration failed:', error);
+      console.error('Registrazione Service Worker fallita:', err);
     });
   });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  await initializeModel(); // Inizializza il modello all'avvio
+  await initializeModel();
   displayPlayers();
 });
