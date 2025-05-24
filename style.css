@@ -146,3 +146,13 @@ button:hover {
   background-color: #28a745;
   color: white;
 }
+
+.insight-style-label {
+  margin-right: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.insight-style-label input[type="radio"] {
+  margin-right: 5px;
+}
